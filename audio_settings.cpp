@@ -11,7 +11,7 @@ void Application::audio_settings_cb(Fl_Widget *w, void *data)
         app->audioSettings->getCancelButton()->callback(cancel_audio_settings_cb, app);
     }
 
-    if (!app->audio->isInitialized()) {
+    if (!app->audio->isContextInit()) {
         std::cerr << "Failed to initialize audio system." << std::endl;
     }
     else {

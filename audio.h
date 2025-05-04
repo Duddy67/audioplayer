@@ -16,19 +16,23 @@ class Audio {
         Audio();
         ~Audio();
 
-        bool isInitialized();
         std::vector<DeviceInfo> getOutputDevices();
         std::vector<DeviceInfo> getInputDevices();
         void printAllDevices();
-        void playFile(const char *fileName);
+        void loadFile(const char *fileName);
+        void play();
+        void stop();
         // Getters.
         ma_engine* getEngine() { return pEngine; }
         ma_sound* getSound() { return pSound; }
+        bool isContextInit() { return contextInit; }
 
 
     private:
         ma_context context;
-        bool initialization;
+        bool contextInit;
+        bool engineInit;
+        bool soundInit;
         ma_engine* pEngine;
         ma_sound* pSound;
         ma_timer* pTimer;

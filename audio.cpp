@@ -15,16 +15,22 @@ void Application::audio_cb(Fl_Widget *w, void *data)
 /*
  * Constructor
  */
-Audio::Audio() : initialization(false) {
+Audio::Audio() : contextInit(false), engineInit(false), soundInit(false) {
     ma_context_config config = ma_context_config_init();
 
     // Initialize the audio context.
     if (ma_context_init(NULL, 0, &config, &context) == MA_SUCCESS) {
-        initialization = true;
+        contextInit = true;
         std::cerr << "Audio context initialized." << std::endl;
     }
 
     pEngine = new ma_engine;
+
+    if (ma_engine_init(NULL, pEngine) == MA_SUCCESS) {
+        engineInit = true;
+        std::cerr << "Audio engine initialized." << std::endl;
+    }
+
     pSound = new ma_sound;
 }
 
@@ -32,24 +38,25 @@ Audio::Audio() : initialization(false) {
  * Destructor
  */
 Audio::~Audio() {
-    if (initialization) {
+    if (contextInit) {
         ma_context_uninit(&context);
         std::cerr << "Audio context uninitialized." << std::endl;
     }
 
-    ma_sound_uninit(pSound);
-    ma_engine_uninit(pEngine);
-}
+    if (soundInit) {
+        ma_sound_uninit(pSound);
+        delete pSound;
+    }
 
-bool Audio::isInitialized() {
-    return initialization;
+    ma_engine_uninit(pEngine);
+    delete pEngine;
 }
 
 std::vector<Audio::DeviceInfo> Audio::getDevices(ma_device_type deviceType) {
     // Create a device array.
     std::vector<DeviceInfo> devices;
     
-    if (!initialization) {
+    if (!contextInit) {
         return devices;
     }
 
@@ -90,11 +97,16 @@ std::vector<Audio::DeviceInfo> Audio::getInputDevices() {
     return getDevices(ma_device_type_capture);
 }
 
-void Audio::playFile(const char *filename)
+void Audio::loadFile(const char *filename)
 {
-    printf("Open audio file '%s'\n", filename);
+    printf("Load audio file '%s'\n", filename);
+
+    if (soundInit) {
+        ma_sound_uninit(pSound);
+        soundInit = false;
+    }
+
     ma_result result;
-    result = ma_engine_init(NULL, pEngine);
     result = ma_sound_init_from_file(pEngine, filename, 0, NULL, NULL, pSound);
 
     if (result != MA_SUCCESS) {
@@ -102,7 +114,23 @@ void Audio::playFile(const char *filename)
         return;
     }
 
-    ma_sound_start(pSound);
+    soundInit = true;
+}
+
+void Audio::play()
+{
+    // Make sure first a file is loaded before playing.
+    if (soundInit) {
+        ma_sound_start(pSound);
+    }
+}
+
+void Audio::stop()
+{
+    // Make sure first a file is loaded before playing.
+    if (soundInit) {
+        ma_sound_stop(pSound);
+    }
 }
 
 /*
@@ -110,7 +138,7 @@ void Audio::playFile(const char *filename)
  */
 void Audio::printAllDevices()
 {
-    if (!initialization) {
+    if (!contextInit) {
         std::cerr << "Audio context not initialized." << std::endl;
         return;
     }

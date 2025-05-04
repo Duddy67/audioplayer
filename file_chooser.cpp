@@ -16,7 +16,7 @@ void Application::file_chooser_cb(Fl_Widget *w, void *data)
         default:   // Choice
             app->fileChooser->preset_file(app->fileChooser->filename());
             //app->fileChooser->open(app->fileChooser->filename());
-            app->audio->playFile(app->fileChooser->filename());
+            app->audio->loadFile(app->fileChooser->filename());
             break;
     }
 }

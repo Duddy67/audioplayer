@@ -49,14 +49,14 @@ void Application::play_cb(Fl_Widget* w, void* data)
 {
     Application* app = (Application*) data;
     app->label("Play button clicked");
+    app->audio->play();
 }
 
 void Application::stop_cb(Fl_Widget* w, void* data)
 {
     Application* app = (Application*) data;
     app->label("Stop button clicked");
-    ma_sound_stop(app->audio->getSound());
-
+    app->audio->stop();
 }
 
 // Create the application.
@@ -93,7 +93,7 @@ Application::Application(int w, int h, const char *l, int argc, char *argv[]) : 
     this->audio = new Audio;
 
         setMessage("Failed to initialize audio system.");
-    if (!this->audio->isInitialized()) {
+    if (!this->audio->isContextInit()) {
         setMessage("Failed to initialize audio system.");
         this->dialog_cb(this->dialogWnd, this);
     }
