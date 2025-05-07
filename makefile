@@ -1,4 +1,4 @@
-SRC = main.cpp menu.cpp dialog_wnd.cpp file_chooser.cpp audio_settings.cpp audio.cpp
+SRC = main.cpp menu.cpp dialog_wnd.cpp file_chooser.cpp audio_settings.cpp audio.cpp main_callbacks.cpp main_functions.cpp
 CXX = g++
 CXXFLAGS = -Wall $(shell fltk-config --cxxflags)
 

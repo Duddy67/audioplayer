@@ -1,63 +1,5 @@
 #include "main.h"
-#include <cstdlib>
 
-void Application::saveConfig(const AppConfig& config, const std::string& filename)
-{
-    json j;
-    j["outputDevice"] = config.outputDevice;
-    j["inputDevice"] = config.inputDevice;
-
-    std::ofstream file(filename);
-    file << j.dump(4); // Pretty print with 4 spaces indentation
-    std::cout << "Configuration saved to " << filename << std::endl;
-
-}
-
-Application::AppConfig Application::loadConfig(const std::string& filename)
-{
-    AppConfig config;
-    std::ifstream file(filename);
-
-    // If no config file is found, create it.
-    if (!file.is_open()) {
-        config.outputDevice = "none";
-        config.inputDevice = "none";
-        this->saveConfig(config, filename);
-        return config;
-    }
-
-    try {
-        json j;
-        file >> j;
-
-        config.outputDevice = j.value("outputDevice", "none");
-        config.inputDevice = j.value("inputDevice", "none");
-    }
-    catch (const json::exception& e) {
-        setMessage("Error parsing config: " + std::string(e.what()));
-    }
-
-    return config;
-}
-
-void Application::setMessage(std::string message)
-{
-    this->message = message;
-}
-
-void Application::play_cb(Fl_Widget* w, void* data)
-{
-    Application* app = (Application*) data;
-    app->label("Play button clicked");
-    app->audio->play();
-}
-
-void Application::stop_cb(Fl_Widget* w, void* data)
-{
-    Application* app = (Application*) data;
-    app->label("Stop button clicked");
-    app->audio->stop();
-}
 
 // Create the application.
 Application::Application(int w, int h, const char *l, int argc, char *argv[]) : Fl_Double_Window(w, h, l)
@@ -112,37 +54,6 @@ Application::Application(int w, int h, const char *l, int argc, char *argv[]) : 
         setMessage("Failed to initialize audio system.");
         this->dialog_cb(this->dialogWnd, this);
     }
-}
-
-void Application::cursor_cb(Fl_Widget *w, void *data)
-{
-    Application* app = (Application*) data;
-
-    // Format slider value as string
-    char buffer[10];
-    snprintf(buffer, sizeof(buffer), "%.0f", app->cursor->value());
-
-    // Set new value in output box
-    app->cursorOutput->value(buffer);
-}
-
-/*
- * Prevents the escape key to close the application. 
- */
-void Application::noEscapeKey_cb(Fl_Widget *w, void *data)
-{
-    // If the escape key is pressed it's ignored.
-    if (Fl::event() == FL_SHORTCUT && Fl::event_key() == FL_Escape) {
-        return;
-    }
-
-    // Close the application when the "close" button is clicked.
-    exit(0);
-}
-
-void Application::quit_cb(Fl_Widget *w, void *data)
-{
-    exit(0);
 }
 
 int main(int argc, char *argv[])
