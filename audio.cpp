@@ -119,18 +119,50 @@ void Audio::loadFile(const char *filename)
 
 void Audio::play()
 {
-    // Make sure first a file is loaded before playing.
-    if (soundInit) {
+    // Make sure first a file is loaded and not played before playing.
+    if (soundInit && !ma_sound_is_playing(pSound)) {
         ma_sound_start(pSound);
+        // Run counter function as a thread.
+        std::thread t(&Audio::counter, this);
+        t.detach();
     }
+
+    return;
 }
 
 void Audio::stop()
 {
-    // Make sure first a file is loaded before playing.
-    if (soundInit) {
+    // Make sure first a file is loaded and played before stopping.
+    if (soundInit && ma_sound_is_playing(pSound)) {
         ma_sound_stop(pSound);
     }
+}
+
+void Audio::counter()
+{
+    printf("Start counter thread.\n");
+    // Display playback time while sound is playing
+    while (ma_sound_is_playing(pSound)) {
+        ma_result result = ma_sound_get_cursor_in_pcm_frames(pSound, &framePosition);
+
+        if (result != MA_SUCCESS) {
+            printf("Failed to get cursor position.");
+            return;
+        }
+
+        ma_uint64 sampleRate = ma_engine_get_sample_rate(pEngine);
+
+        double seconds = (double)framePosition / sampleRate;
+
+        printf("\rPlayback Time: %.2f seconds", seconds);
+        fflush(stdout);  // Ensure the output updates in place
+        struct timespec ts = {.tv_sec = 0, .tv_nsec = 100 * 1000000}; // 100ms
+        nanosleep(&ts, NULL);
+        //ma_sleep(100); // Sleep for 100 milliseconds
+    }
+
+    printf("Stop counter thread.\n");
+    return;
 }
 
 /*

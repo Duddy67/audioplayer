@@ -78,6 +78,21 @@ Application::Application(int w, int h, const char *l, int argc, char *argv[]) : 
     playBtn->callback(play_cb, this);
     stopBtn = new Fl_Button(110, 150, 80, 40, "Stop");
     stopBtn->callback(stop_cb, this);
+
+    cursor = new Fl_Slider(10, 100, w - 20, 25);
+    cursor->type(FL_HORIZONTAL);
+    cursor->bounds(0, 10);
+    cursor->step(1);
+    cursor->value(0);
+
+
+    cursorOutput = new Fl_Output(130, 60, 40, 30);
+    cursorOutput->value("0");
+    cursorOutput->textfont(FL_BOLD);
+    cursorOutput->textsize(16);
+    cursorOutput->align(FL_ALIGN_CENTER);
+    cursor->callback(cursor_cb, this);
+
     group->end();
 
     // Stop adding children to this window.
@@ -97,6 +112,18 @@ Application::Application(int w, int h, const char *l, int argc, char *argv[]) : 
         setMessage("Failed to initialize audio system.");
         this->dialog_cb(this->dialogWnd, this);
     }
+}
+
+void Application::cursor_cb(Fl_Widget *w, void *data)
+{
+    Application* app = (Application*) data;
+
+    // Format slider value as string
+    char buffer[10];
+    snprintf(buffer, sizeof(buffer), "%.0f", app->cursor->value());
+
+    // Set new value in output box
+    app->cursorOutput->value(buffer);
 }
 
 /*

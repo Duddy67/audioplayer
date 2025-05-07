@@ -4,6 +4,8 @@
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Menu_Bar.H>
 #include <FL/Fl_Menu_Item.H>
+#include <FL/Fl_Slider.H>
+#include <FL/Fl_Output.H>
 #include <iostream>
 #include <fstream>
 #include "dialog_wnd.h"
@@ -25,11 +27,13 @@ class Application : public Fl_Double_Window
         AudioSettings *audioSettings = 0;
         FileChooser *fileChooser = 0;
         Audio *audio = 0;
+        std::string message;
         Fl_Menu_Bar *menu;
         Fl_Menu_Item *menuItem;
-        std::string message;
-        Fl_Button* playBtn;
-        Fl_Button* stopBtn;
+        Fl_Button *playBtn;
+        Fl_Button *stopBtn;
+        Fl_Slider *cursor;
+        Fl_Output* cursorOutput;
 
         struct AppConfig {
             std::string outputDevice;
@@ -61,6 +65,7 @@ class Application : public Fl_Double_Window
         static void audio_cb(Fl_Widget *w, void *data);
         static void play_cb(Fl_Widget *w, void *data);
         static void stop_cb(Fl_Widget *w, void *data);
+        static void cursor_cb(Fl_Widget *w, void *data);
 };
 
 #endif

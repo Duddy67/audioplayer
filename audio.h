@@ -3,6 +3,8 @@
 
 #include <string>
 #include <vector>
+#include <thread>
+#include <time.h>
 #include "../libraries/miniaudio.h"
 
 class Audio {
@@ -22,6 +24,7 @@ class Audio {
         void loadFile(const char *fileName);
         void play();
         void stop();
+        void counter();
         // Getters.
         ma_engine* getEngine() { return pEngine; }
         ma_sound* getSound() { return pSound; }
@@ -36,6 +39,7 @@ class Audio {
         ma_engine* pEngine;
         ma_sound* pSound;
         ma_timer* pTimer;
+        ma_uint64 framePosition = 0;
 
         std::vector<DeviceInfo> getDevices(ma_device_type deviceType);
 };
