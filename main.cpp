@@ -16,24 +16,23 @@ Application::Application(int w, int h, const char *l, int argc, char *argv[]) : 
     // Container for other widgets.
     Fl_Group *group = new Fl_Group(0, HEIGHT_MENUBAR, w, h - HEIGHT_MENUBAR);   
     // Other widgets go here...
-    playBtn = new Fl_Button(10, 150, 80, 40, "Play");
+    playBtn = new Fl_Button(SPACE, HEIGHT - BUTTON_HEIGHT - SPACE, BUTTON_WIDTH, BUTTON_HEIGHT, "Play");
     playBtn->callback(play_cb, this);
-    stopBtn = new Fl_Button(110, 150, 80, 40, "Stop");
+    stopBtn = new Fl_Button(BUTTON_WIDTH + (SPACE * 2), HEIGHT - BUTTON_HEIGHT - SPACE, BUTTON_WIDTH, BUTTON_HEIGHT, "Stop");
     stopBtn->callback(stop_cb, this);
 
-    cursor = new Fl_Slider(10, 100, w - 20, 25);
-    cursor->type(FL_HORIZONTAL);
-    cursor->bounds(0, 10);
-    cursor->step(1);
-    cursor->value(0);
+    slider = new Fl_Slider(SPACE, HEIGHT - SPACE - (BUTTON_HEIGHT * 2), w - (SPACE * 2), (SPACE * 2));
+    slider->type(FL_HORIZONTAL);
+    slider->bounds(0, 10);
+    slider->step(1);
+    slider->value(0);
 
-
-    cursorOutput = new Fl_Output(130, 60, 40, 30);
-    cursorOutput->value("0");
-    cursorOutput->textfont(FL_BOLD);
-    cursorOutput->textsize(16);
-    cursorOutput->align(FL_ALIGN_CENTER);
-    cursor->callback(cursor_cb, this);
+    sliderOutput = new Fl_Output(SPACE, HEIGHT - SPACE - (BUTTON_HEIGHT * 3), BUTTON_WIDTH, 30);
+    sliderOutput->value("00:00:00");
+    //sliderOutput->textfont(FL_BOLD);
+    sliderOutput->textsize(16);
+    sliderOutput->align(FL_ALIGN_CENTER);
+    slider->callback(slider_cb, this);
 
     group->end();
 
@@ -47,9 +46,8 @@ Application::Application(int w, int h, const char *l, int argc, char *argv[]) : 
     loadConfig(CONFIG_FILENAME);
 
     // Create and initialize the Audio object.
-    this->audio = new Audio;
+    this->audio = new Audio(this);
 
-        setMessage("Failed to initialize audio system.");
     if (!this->audio->isContextInit()) {
         setMessage("Failed to initialize audio system.");
         this->dialog_cb(this->dialogWnd, this);
@@ -58,7 +56,7 @@ Application::Application(int w, int h, const char *l, int argc, char *argv[]) : 
 
 int main(int argc, char *argv[])
 {
-    Application app(600, 400, "Player", argc, argv);
+    Application app(WIDTH, HEIGHT, "Player", argc, argv);
     //Application *app = new Application(300,200,"My Application", argc, argv);
     //app->show();
 

@@ -8,14 +8,14 @@ void Application::audio_cb(Fl_Widget *w, void *data)
     std::cerr << "audio_cb" << std::endl;
 
     if (app->audio == 0) {
-        app->audio = new Audio;
+        app->audio = new Audio(app);
     }
 }
 
 /*
  * Constructor
  */
-Audio::Audio() : contextInit(false), engineInit(false), soundInit(false) {
+Audio::Audio(Application* app) : pApplication(app), contextInit(false), engineInit(false), soundInit(false) {
     ma_context_config config = ma_context_config_init();
 
     // Initialize the audio context.
@@ -101,6 +101,7 @@ void Audio::loadFile(const char *filename)
 {
     printf("Load audio file '%s'\n", filename);
 
+    // Uninitialize the previous loaded sound if any.
     if (soundInit) {
         ma_sound_uninit(pSound);
         soundInit = false;
@@ -115,6 +116,18 @@ void Audio::loadFile(const char *filename)
     }
 
     soundInit = true;
+
+    ma_uint64 totalFrames = 0;
+    result = ma_sound_get_length_in_pcm_frames(pSound, &totalFrames);
+
+    if (result != MA_SUCCESS) {
+        printf("Failed to get sound length.\n");
+    } else {
+        ma_uint64 sampleRate = ma_engine_get_sample_rate(pEngine);
+        double totalSeconds = (double)totalFrames / sampleRate;
+        printf("Sound duration: %.2f seconds\n", totalSeconds);
+        pApplication->getSlider()->bounds(0, totalSeconds);
+    }
 }
 
 void Audio::play()
@@ -143,6 +156,7 @@ void Audio::counter()
     printf("Start counter thread.\n");
     // Display playback time while sound is playing
     while (ma_sound_is_playing(pSound)) {
+        ma_uint64 framePosition = 0;
         ma_result result = ma_sound_get_cursor_in_pcm_frames(pSound, &framePosition);
 
         if (result != MA_SUCCESS) {
@@ -152,10 +166,16 @@ void Audio::counter()
 
         ma_uint64 sampleRate = ma_engine_get_sample_rate(pEngine);
 
-        double seconds = (double)framePosition / sampleRate;
+        seconds = (double)framePosition / sampleRate;
 
-        printf("\rPlayback Time: %.2f seconds", seconds);
+        printf("\rPlayback Time: ");
+        printDuration(seconds);
         fflush(stdout);  // Ensure the output updates in place
+        // 
+        pApplication->getSlider()->value(seconds);
+        Application::slider_cb(pApplication->getSlider(), pApplication);
+        Fl::check();
+
         struct timespec ts = {.tv_sec = 0, .tv_nsec = 100 * 1000000}; // 100ms
         nanosleep(&ts, NULL);
         //ma_sleep(100); // Sleep for 100 milliseconds
@@ -163,6 +183,16 @@ void Audio::counter()
 
     printf("Stop counter thread.\n");
     return;
+}
+
+void Audio::printDuration(double seconds)
+{
+    int totalSeconds = (int)seconds;
+    int hours = totalSeconds / 3600;
+    int minutes = (totalSeconds % 3600) / 60;
+    int secs = totalSeconds % 60;
+
+    printf("%02d:%02d:%02d", hours, minutes, secs);
 }
 
 /*

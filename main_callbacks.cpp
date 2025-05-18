@@ -15,16 +15,22 @@ void Application::stop_cb(Fl_Widget* w, void* data)
     app->audio->stop();
 }
 
-void Application::cursor_cb(Fl_Widget *w, void *data)
+void Application::slider_cb(Fl_Widget *w, void *data)
 {
     Application* app = (Application*) data;
 
+    double seconds = app->slider->value();
+    int totalSeconds = (int)seconds;
+    int hours = totalSeconds / 3600;
+    int minutes = (totalSeconds % 3600) / 60;
+    int secs = totalSeconds % 60;
+
     // Format slider value as string
-    char buffer[10];
-    snprintf(buffer, sizeof(buffer), "%.0f", app->cursor->value());
+    char buffer[60];
+    snprintf(buffer, sizeof(buffer), "%02d:%02d:%02d", hours, minutes, secs);
 
     // Set new value in output box
-    app->cursorOutput->value(buffer);
+    app->sliderOutput->value(buffer);
 }
 
 /*

@@ -13,6 +13,11 @@
 #include "audio_settings.h"
 #include "audio.h"
 #include "../libraries/json.hpp"
+#define WIDTH 600
+#define HEIGHT 400
+#define BUTTON_WIDTH 80
+#define BUTTON_HEIGHT 40
+#define SPACE 10
 #define HEIGHT_MENUBAR 18
 #define MODAL_WND_POS 20
 #define TEXT_SIZE 13
@@ -32,8 +37,8 @@ class Application : public Fl_Double_Window
         Fl_Menu_Item *menuItem;
         Fl_Button *playBtn;
         Fl_Button *stopBtn;
-        Fl_Slider *cursor;
-        Fl_Output* cursorOutput;
+        Fl_Slider *slider;
+        Fl_Output* sliderOutput;
 
         struct AppConfig {
             std::string outputDevice;
@@ -50,6 +55,7 @@ class Application : public Fl_Double_Window
         // Function to load configuration from file
         AppConfig loadConfig(const std::string& filename);
         std::string getMessage() { return message; }
+        Fl_Slider* getSlider() { return slider; }
         void setMessage(std::string message);
 
         // Call back functions.
@@ -65,7 +71,7 @@ class Application : public Fl_Double_Window
         static void audio_cb(Fl_Widget *w, void *data);
         static void play_cb(Fl_Widget *w, void *data);
         static void stop_cb(Fl_Widget *w, void *data);
-        static void cursor_cb(Fl_Widget *w, void *data);
+        static void slider_cb(Fl_Widget *w, void *data);
 };
 
 #endif
