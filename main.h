@@ -35,8 +35,7 @@ class Application : public Fl_Double_Window
         std::string message;
         Fl_Menu_Bar *menu;
         Fl_Menu_Item *menuItem;
-        Fl_Button *playBtn;
-        Fl_Button *stopBtn;
+        Fl_Button *toggleBtn;
         Fl_Slider *slider;
         Fl_Output* sliderOutput;
 
@@ -56,6 +55,7 @@ class Application : public Fl_Double_Window
         AppConfig loadConfig(const std::string& filename);
         std::string getMessage() { return message; }
         Fl_Slider* getSlider() { return slider; }
+        Fl_Button* getButton() { return toggleBtn; }
         void setMessage(std::string message);
 
         // Call back functions.
@@ -69,8 +69,7 @@ class Application : public Fl_Double_Window
         static void cancel_audio_settings_cb(Fl_Widget *w, void *data);
         static void save_cb(Fl_Widget *w, void *data);
         static void audio_cb(Fl_Widget *w, void *data);
-        static void play_cb(Fl_Widget *w, void *data);
-        static void stop_cb(Fl_Widget *w, void *data);
+        static void toggle_cb(Fl_Widget *w, void *data);
         static void slider_cb(Fl_Widget *w, void *data);
 };
 

@@ -1,18 +1,23 @@
 #include "main.h"
 
 
-void Application::play_cb(Fl_Widget* w, void* data)
+void Application::toggle_cb(Fl_Widget* w, void* data)
 {
     Application* app = (Application*) data;
-    app->label("Play button clicked");
-    app->audio->play();
-}
+    app->audio->toggle();
 
-void Application::stop_cb(Fl_Widget* w, void* data)
-{
-    Application* app = (Application*) data;
-    app->label("Stop button clicked");
-    app->audio->stop();
+    // Display the next action icon (play or stop) according to the sound current state.
+    if (app->audio->isPlaying()) {
+        // Stop icon.
+        app->getButton()->label("@||");
+    }
+    // The sound is not played
+    else {
+        // Play icon.
+        app->getButton()->label("@>");
+    }
+
+    Fl::check();
 }
 
 void Application::slider_cb(Fl_Widget *w, void *data)

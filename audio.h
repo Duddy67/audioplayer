@@ -25,8 +25,7 @@ class Audio {
         std::vector<DeviceInfo> getInputDevices();
         void printAllDevices();
         void loadFile(const char *fileName);
-        void play();
-        void stop();
+        void toggle();
         void counter();
         void printDuration(double seconds);
         // Getters.
@@ -34,6 +33,7 @@ class Audio {
         ma_sound* getSound() { return pSound; }
         double getSeconds() { return seconds; }
         bool isContextInit() { return contextInit; }
+        bool isPlaying();
 
 
     private:

@@ -16,10 +16,8 @@ Application::Application(int w, int h, const char *l, int argc, char *argv[]) : 
     // Container for other widgets.
     Fl_Group *group = new Fl_Group(0, HEIGHT_MENUBAR, w, h - HEIGHT_MENUBAR);   
     // Other widgets go here...
-    playBtn = new Fl_Button(SPACE, HEIGHT - BUTTON_HEIGHT - SPACE, BUTTON_WIDTH, BUTTON_HEIGHT, "Play");
-    playBtn->callback(play_cb, this);
-    stopBtn = new Fl_Button(BUTTON_WIDTH + (SPACE * 2), HEIGHT - BUTTON_HEIGHT - SPACE, BUTTON_WIDTH, BUTTON_HEIGHT, "Stop");
-    stopBtn->callback(stop_cb, this);
+    toggleBtn = new Fl_Button(SPACE, HEIGHT - BUTTON_HEIGHT - SPACE, BUTTON_WIDTH, BUTTON_HEIGHT, "@>");
+    toggleBtn->callback(toggle_cb, this);
 
     slider = new Fl_Slider(SPACE, HEIGHT - SPACE - (BUTTON_HEIGHT * 2), w - (SPACE * 2), (SPACE * 2));
     slider->type(FL_HORIZONTAL);

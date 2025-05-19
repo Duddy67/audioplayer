@@ -130,25 +130,26 @@ void Audio::loadFile(const char *filename)
     }
 }
 
-void Audio::play()
+/*
+ * Play or stop the sound according to its current state (ie: started or stopped).
+ */
+void Audio::toggle()
 {
     // Make sure first a file is loaded and not played before playing.
-    if (soundInit && !ma_sound_is_playing(pSound)) {
-        ma_sound_start(pSound);
-        // Run counter function as a thread.
-        std::thread t(&Audio::counter, this);
-        t.detach();
+    if (soundInit) {
+        if (!ma_sound_is_playing(pSound)) {
+            ma_sound_start(pSound);
+            // Run counter function as a thread.
+            std::thread t(&Audio::counter, this);
+            t.detach();
+        }
+        // The sound is played.
+        else {
+            ma_sound_stop(pSound);
+        }
     }
 
     return;
-}
-
-void Audio::stop()
-{
-    // Make sure first a file is loaded and played before stopping.
-    if (soundInit && ma_sound_is_playing(pSound)) {
-        ma_sound_stop(pSound);
-    }
 }
 
 void Audio::counter()
@@ -183,6 +184,15 @@ void Audio::counter()
 
     printf("Stop counter thread.\n");
     return;
+}
+
+bool Audio::isPlaying()
+{
+    if (soundInit) {
+        return ma_sound_is_playing(pSound);
+    }
+
+    return false;
 }
 
 void Audio::printDuration(double seconds)
