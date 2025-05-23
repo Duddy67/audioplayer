@@ -37,7 +37,9 @@ class Application : public Fl_Double_Window
         Fl_Menu_Item *menuItem;
         Fl_Button *toggleBtn;
         Fl_Slider *slider;
-        Fl_Output* sliderOutput;
+        Fl_Output *sliderOutput;
+        // Null Fl_Widget pointer aimed to be passed as first argument of some callback functions
+        Fl_Widget *nullWidget = nullptr;
 
         struct AppConfig {
             std::string outputDevice;
@@ -56,7 +58,9 @@ class Application : public Fl_Double_Window
         std::string getMessage() { return message; }
         Fl_Slider* getSlider() { return slider; }
         Fl_Button* getButton() { return toggleBtn; }
+        Fl_Widget* getNullWidget() { return nullWidget; }
         void setMessage(std::string message);
+        bool hasSliderMoved = false;
 
         // Call back functions.
         static void quit_cb(Fl_Widget *w, void *data);
@@ -68,9 +72,8 @@ class Application : public Fl_Double_Window
         static void cancel_cb(Fl_Widget *w, void *data);
         static void cancel_audio_settings_cb(Fl_Widget *w, void *data);
         static void save_cb(Fl_Widget *w, void *data);
-        static void audio_cb(Fl_Widget *w, void *data);
         static void toggle_cb(Fl_Widget *w, void *data);
-        static void slider_cb(Fl_Widget *w, void *data);
+        static void time_cb(Fl_Widget *w, void *data);
 };
 
 #endif

@@ -21,16 +21,17 @@ Application::Application(int w, int h, const char *l, int argc, char *argv[]) : 
 
     slider = new Fl_Slider(SPACE, HEIGHT - SPACE - (BUTTON_HEIGHT * 2), w - (SPACE * 2), (SPACE * 2));
     slider->type(FL_HORIZONTAL);
-    slider->bounds(0, 10);
     slider->step(1);
     slider->value(0);
 
     sliderOutput = new Fl_Output(SPACE, HEIGHT - SPACE - (BUTTON_HEIGHT * 3), BUTTON_WIDTH, 30);
     sliderOutput->value("00:00:00");
-    //sliderOutput->textfont(FL_BOLD);
     sliderOutput->textsize(16);
     sliderOutput->align(FL_ALIGN_CENTER);
-    slider->callback(slider_cb, this);
+    slider->callback(time_cb, this);
+    // Trigger callback whenever the value changes, including dragging
+    slider->when(FL_WHEN_CHANGED);
+
 
     group->end();
 

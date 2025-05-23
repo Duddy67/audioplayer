@@ -20,9 +20,15 @@ void Application::toggle_cb(Fl_Widget* w, void* data)
     Fl::check();
 }
 
-void Application::slider_cb(Fl_Widget *w, void *data)
+void Application::time_cb(Fl_Widget *w, void *data)
 {
     Application* app = (Application*) data;
+    app->hasSliderMoved = false;
+
+    if (dynamic_cast<Fl_Slider*>(w)) {
+        std::cout << "Caller is an Fl_Slider.\n";
+        app->hasSliderMoved = true;
+    }
 
     double seconds = app->slider->value();
     int totalSeconds = (int)seconds;

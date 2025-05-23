@@ -45,3 +45,4 @@ void Application::setMessage(std::string message)
 {
     this->message = message;
 }
+

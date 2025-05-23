@@ -26,7 +26,7 @@ class Audio {
         void printAllDevices();
         void loadFile(const char *fileName);
         void toggle();
-        void counter();
+        void run();
         void printDuration(double seconds);
         // Getters.
         ma_engine* getEngine() { return pEngine; }
@@ -34,7 +34,6 @@ class Audio {
         double getSeconds() { return seconds; }
         bool isContextInit() { return contextInit; }
         bool isPlaying();
-
 
     private:
         ma_context context;
@@ -46,8 +45,8 @@ class Audio {
         ma_engine* pEngine;
         ma_sound* pSound;
         ma_timer* pTimer;
-
         std::vector<DeviceInfo> getDevices(ma_device_type deviceType);
+
 };
 
 #endif // AUDIO_H

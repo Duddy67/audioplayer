@@ -2,16 +2,6 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "../libraries/miniaudio.h"
 
-void Application::audio_cb(Fl_Widget *w, void *data)
-{
-    Application* app = (Application*) data;
-    std::cerr << "audio_cb" << std::endl;
-
-    if (app->audio == 0) {
-        app->audio = new Audio(app);
-    }
-}
-
 /*
  * Constructor
  */
@@ -119,6 +109,7 @@ void Audio::loadFile(const char *filename)
 
     ma_uint64 totalFrames = 0;
     result = ma_sound_get_length_in_pcm_frames(pSound, &totalFrames);
+    pApplication->hasSliderMoved = false;
 
     if (result != MA_SUCCESS) {
         printf("Failed to get sound length.\n");
@@ -135,12 +126,13 @@ void Audio::loadFile(const char *filename)
  */
 void Audio::toggle()
 {
-    // Make sure first a file is loaded and not played before playing.
+    // Make sure first a file is loaded.
     if (soundInit) {
+        // The sound is not played.
         if (!ma_sound_is_playing(pSound)) {
             ma_sound_start(pSound);
-            // Run counter function as a thread.
-            std::thread t(&Audio::counter, this);
+            // Run the run function as a thread.
+            std::thread t(&Audio::run, this);
             t.detach();
         }
         // The sound is played.
@@ -152,9 +144,9 @@ void Audio::toggle()
     return;
 }
 
-void Audio::counter()
+void Audio::run()
 {
-    printf("Start counter thread.\n");
+    printf("Start run thread.\n");
     // Display playback time while sound is playing
     while (ma_sound_is_playing(pSound)) {
         ma_uint64 framePosition = 0;
@@ -167,22 +159,41 @@ void Audio::counter()
 
         ma_uint64 sampleRate = ma_engine_get_sample_rate(pEngine);
 
-        seconds = (double)framePosition / sampleRate;
+        if (pApplication->hasSliderMoved) {
+            // Convert desired position in seconds to PCM frames
+            framePosition = (ma_uint64)(pApplication->getSlider()->value() * sampleRate);
+
+            result = ma_sound_seek_to_pcm_frame(pSound, framePosition);
+
+            if (result != MA_SUCCESS) {
+                printf("\nFailed to seek to new position.\n");
+            }
+            else {
+                // Synchronize the current position.
+                seconds = pApplication->getSlider()->value();  
+            }
+        }
+        else {
+            seconds = (double)framePosition / sampleRate;
+        }
 
         printf("\rPlayback Time: ");
         printDuration(seconds);
         fflush(stdout);  // Ensure the output updates in place
         // 
         pApplication->getSlider()->value(seconds);
-        Application::slider_cb(pApplication->getSlider(), pApplication);
+        // Don't pass the time slider widget as first argument as it is used to detect
+        // which widget type is calling the callback function.
+        // As the Audio class is not a widget, any widget type but Fl_Slider can be passed
+        // instead. The first argument is not used by the callback function anyway.
+        Application::time_cb(pApplication->getNullWidget(), pApplication);
         Fl::check();
 
         struct timespec ts = {.tv_sec = 0, .tv_nsec = 100 * 1000000}; // 100ms
         nanosleep(&ts, NULL);
-        //ma_sleep(100); // Sleep for 100 milliseconds
     }
 
-    printf("Stop counter thread.\n");
+    printf("Stop run thread.\n");
     return;
 }
 
