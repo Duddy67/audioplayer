@@ -16,22 +16,35 @@ Application::Application(int w, int h, const char *l, int argc, char *argv[]) : 
     // Container for other widgets.
     Fl_Group *group = new Fl_Group(0, HEIGHT_MENUBAR, w, h - HEIGHT_MENUBAR);   
     // Other widgets go here...
+
     toggleBtn = new Fl_Button(SPACE, HEIGHT - BUTTON_HEIGHT - SPACE, BUTTON_WIDTH, BUTTON_HEIGHT, "@>");
     toggleBtn->callback(toggle_cb, this);
 
-    slider = new Fl_Slider(SPACE, HEIGHT - SPACE - (BUTTON_HEIGHT * 2), w - (SPACE * 2), (SPACE * 2));
-    slider->type(FL_HORIZONTAL);
-    slider->step(1);
-    slider->value(0);
-
-    sliderOutput = new Fl_Output(SPACE, HEIGHT - SPACE - (BUTTON_HEIGHT * 3), BUTTON_WIDTH, 30);
-    sliderOutput->value("00:00:00");
-    sliderOutput->textsize(16);
-    sliderOutput->align(FL_ALIGN_CENTER);
-    slider->callback(time_cb, this);
+    time = new Fl_Slider(SPACE, HEIGHT - SPACE - (BUTTON_HEIGHT * 2), w - (SPACE * 2), (SPACE * 2));
+    time->type(FL_HORIZONTAL);
+    time->step(1);
+    time->value(0);
+    time->callback(time_cb, this);
     // Trigger callback whenever the value changes, including dragging
-    slider->when(FL_WHEN_CHANGED);
+    time->when(FL_WHEN_CHANGED);
 
+    timeOutput = new Fl_Output(SPACE, HEIGHT - SPACE - (BUTTON_HEIGHT * 3), BUTTON_WIDTH, 30);
+    timeOutput->value("00:00:00");
+    timeOutput->textsize(16);
+    timeOutput->label("Counter");
+    timeOutput->align(FL_ALIGN_TOP);
+
+    duration = new Fl_Output(w - BUTTON_WIDTH - SPACE, HEIGHT - SPACE - (BUTTON_HEIGHT * 3), BUTTON_WIDTH, 30);
+    duration->value("00:00:00");
+    duration->textsize(16);
+    duration->label("Duration");
+    duration->align(FL_ALIGN_TOP);
+
+    volume = new Fl_Slider(w - (BUTTON_WIDTH * 2) - SPACE, HEIGHT - SPACE - BUTTON_HEIGHT, (BUTTON_WIDTH * 2), BUTTON_HEIGHT);
+    volume->type(FL_HORIZONTAL);
+    volume->step(1);
+    volume->bounds(0, 10);
+    volume->value(0);
 
     group->end();
 

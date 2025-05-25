@@ -8,6 +8,7 @@
 #include <FL/Fl_Output.H>
 #include <iostream>
 #include <fstream>
+#include <bits/stdc++.h> // std::map
 #include "dialog_wnd.h"
 #include "file_chooser.h"
 #include "audio_settings.h"
@@ -36,8 +37,11 @@ class Application : public Fl_Double_Window
         Fl_Menu_Bar *menu;
         Fl_Menu_Item *menuItem;
         Fl_Button *toggleBtn;
-        Fl_Slider *slider;
-        Fl_Output *sliderOutput;
+        Fl_Slider *time;
+        Fl_Slider *volume;
+        Fl_Output *timeOutput;
+        Fl_Output *volumeOutput;
+        Fl_Output *duration;
         // Null Fl_Widget pointer aimed to be passed as first argument of some callback functions
         Fl_Widget *nullWidget = nullptr;
 
@@ -56,10 +60,12 @@ class Application : public Fl_Double_Window
         // Function to load configuration from file
         AppConfig loadConfig(const std::string& filename);
         std::string getMessage() { return message; }
-        Fl_Slider* getSlider() { return slider; }
+        Fl_Slider* getSlider(const char *type);
         Fl_Button* getButton() { return toggleBtn; }
         Fl_Widget* getNullWidget() { return nullWidget; }
         void setMessage(std::string message);
+        void setDuration(double seconds);
+        std::map<std::string, int> getTimeFromSeconds(double seconds);
         bool hasSliderMoved = false;
 
         // Call back functions.

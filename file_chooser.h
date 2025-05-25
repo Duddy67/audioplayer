@@ -26,7 +26,8 @@ class FileChooser : public Fl_Native_File_Chooser
 
     FileChooser() {
         // Initialize the file chooser
-        filter("Wav\t*.wav\n");
+        filter("Wav\t*.wav\n"
+               "MP3\t*.mp3\n");
         preset_file(this->untitled_default());
     }
 

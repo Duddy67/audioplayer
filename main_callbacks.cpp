@@ -30,18 +30,15 @@ void Application::time_cb(Fl_Widget *w, void *data)
         app->hasSliderMoved = true;
     }
 
-    double seconds = app->slider->value();
-    int totalSeconds = (int)seconds;
-    int hours = totalSeconds / 3600;
-    int minutes = (totalSeconds % 3600) / 60;
-    int secs = totalSeconds % 60;
+    double seconds = app->getSlider("time")->value();
+    std::map time = app->getTimeFromSeconds(seconds);
 
     // Format slider value as string
     char buffer[60];
-    snprintf(buffer, sizeof(buffer), "%02d:%02d:%02d", hours, minutes, secs);
+    snprintf(buffer, sizeof(buffer), "%02d:%02d:%02d", time["hours"], time["minutes"], time["seconds"]);
 
     // Set new value in output box
-    app->sliderOutput->value(buffer);
+    app->timeOutput->value(buffer);
 }
 
 /*

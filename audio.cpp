@@ -117,7 +117,8 @@ void Audio::loadFile(const char *filename)
         ma_uint64 sampleRate = ma_engine_get_sample_rate(pEngine);
         double totalSeconds = (double)totalFrames / sampleRate;
         printf("Sound duration: %.2f seconds\n", totalSeconds);
-        pApplication->getSlider()->bounds(0, totalSeconds);
+        pApplication->getSlider("time")->bounds(0, totalSeconds);
+        pApplication->setDuration(totalSeconds);
     }
 }
 
@@ -146,8 +147,7 @@ void Audio::toggle()
 
 void Audio::run()
 {
-    printf("Start run thread.\n");
-    // Display playback time while sound is playing
+    // Computes playback time (in seconds) while the sound is playing.
     while (ma_sound_is_playing(pSound)) {
         ma_uint64 framePosition = 0;
         ma_result result = ma_sound_get_cursor_in_pcm_frames(pSound, &framePosition);
@@ -161,7 +161,7 @@ void Audio::run()
 
         if (pApplication->hasSliderMoved) {
             // Convert desired position in seconds to PCM frames
-            framePosition = (ma_uint64)(pApplication->getSlider()->value() * sampleRate);
+            framePosition = (ma_uint64)(pApplication->getSlider("time")->value() * sampleRate);
 
             result = ma_sound_seek_to_pcm_frame(pSound, framePosition);
 
@@ -170,7 +170,7 @@ void Audio::run()
             }
             else {
                 // Synchronize the current position.
-                seconds = pApplication->getSlider()->value();  
+                seconds = pApplication->getSlider("time")->value();  
             }
         }
         else {
@@ -179,9 +179,10 @@ void Audio::run()
 
         printf("\rPlayback Time: ");
         printDuration(seconds);
-        fflush(stdout);  // Ensure the output updates in place
-        // 
-        pApplication->getSlider()->value(seconds);
+        // Ensure the output updates in place
+        fflush(stdout);  
+        // Update the time slider value.
+        pApplication->getSlider("time")->value(seconds);
         // Don't pass the time slider widget as first argument as it is used to detect
         // which widget type is calling the callback function.
         // As the Audio class is not a widget, any widget type but Fl_Slider can be passed
@@ -193,7 +194,6 @@ void Audio::run()
         nanosleep(&ts, NULL);
     }
 
-    printf("Stop run thread.\n");
     return;
 }
 

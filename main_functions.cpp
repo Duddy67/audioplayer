@@ -46,3 +46,40 @@ void Application::setMessage(std::string message)
     this->message = message;
 }
 
+Fl_Slider* Application::getSlider(const char *type)
+{
+    if (strcmp(type, "time") == 0) {
+        return time;
+    }
+
+    if (strcmp(type, "volume") == 0) {
+        return volume;
+    }
+
+    return nullptr;
+}
+
+void Application::setDuration(double seconds)
+{
+    std::map time = getTimeFromSeconds(seconds);
+
+    // Format slider value as string
+    char buffer[60];
+    snprintf(buffer, sizeof(buffer), "%02d:%02d:%02d", time["hours"], time["minutes"], time["seconds"]);
+
+    // Set new value in output box
+    duration->value(buffer);
+}
+
+std::map<std::string, int> Application::getTimeFromSeconds(double seconds) 
+{
+    int totalSeconds = (int)seconds;
+    int hours = totalSeconds / 3600;
+    int minutes = (totalSeconds % 3600) / 60;
+    int seconds = totalSeconds % 60;
+
+    std::map<std::string, int> time{{"hours", hours}, {"minutes", minutes}, {"seconds", seconds}};
+
+    return time;
+}
+
