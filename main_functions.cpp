@@ -7,6 +7,7 @@ void Application::saveConfig(const AppConfig& config, const std::string& filenam
     json j;
     j["outputDevice"] = config.outputDevice;
     j["inputDevice"] = config.inputDevice;
+    j["volume"] = config.volume;
 
     std::ofstream file(filename);
     file << j.dump(4); // Pretty print with 4 spaces indentation
@@ -23,6 +24,7 @@ Application::AppConfig Application::loadConfig(const std::string& filename)
     if (!file.is_open()) {
         config.outputDevice = "none";
         config.inputDevice = "none";
+        config.volume = "0";
         this->saveConfig(config, filename);
         return config;
     }
@@ -33,6 +35,7 @@ Application::AppConfig Application::loadConfig(const std::string& filename)
 
         config.outputDevice = j.value("outputDevice", "none");
         config.inputDevice = j.value("inputDevice", "none");
+        config.volume = j.value("volume", "0");
     }
     catch (const json::exception& e) {
         setMessage("Error parsing config: " + std::string(e.what()));
@@ -76,10 +79,19 @@ std::map<std::string, int> Application::getTimeFromSeconds(double seconds)
     int totalSeconds = (int)seconds;
     int hours = totalSeconds / 3600;
     int minutes = (totalSeconds % 3600) / 60;
-    int seconds = totalSeconds % 60;
+    int secs = totalSeconds % 60;
 
-    std::map<std::string, int> time{{"hours", hours}, {"minutes", minutes}, {"seconds", seconds}};
+    std::map<std::string, int> time{{"hours", hours}, {"minutes", minutes}, {"seconds", secs}};
 
     return time;
+}
+
+void Application::saveVolume()
+{
+    float vol = (float)volume->value();
+    std::string volume = std::to_string(vol);
+    AppConfig config = loadConfig(CONFIG_FILENAME);
+    config.volume = volume;
+    saveConfig(config, CONFIG_FILENAME);
 }
 

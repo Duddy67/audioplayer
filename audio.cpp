@@ -122,6 +122,15 @@ void Audio::loadFile(const char *filename)
     }
 }
 
+void Audio::setVolume(float value)
+{
+    // Make sure first a file is loaded.
+    if (soundInit) {
+        ma_sound_set_volume (pSound, value);
+    }
+
+}
+
 /*
  * Play or stop the sound according to its current state (ie: started or stopped).
  */
@@ -163,6 +172,7 @@ void Audio::run()
             // Convert desired position in seconds to PCM frames
             framePosition = (ma_uint64)(pApplication->getSlider("time")->value() * sampleRate);
 
+            // Synchronize the sound cursor position to the time slider's.
             result = ma_sound_seek_to_pcm_frame(pSound, framePosition);
 
             if (result != MA_SUCCESS) {

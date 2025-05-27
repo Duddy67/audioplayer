@@ -25,6 +25,7 @@ class Audio {
         std::vector<DeviceInfo> getInputDevices();
         void printAllDevices();
         void loadFile(const char *fileName);
+        void setVolume(float value);
         void toggle();
         void run();
         void printDuration(double seconds);

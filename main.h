@@ -48,6 +48,7 @@ class Application : public Fl_Double_Window
         struct AppConfig {
             std::string outputDevice;
             std::string inputDevice;
+            std::string volume;
         };
 
     public:
@@ -65,6 +66,7 @@ class Application : public Fl_Double_Window
         Fl_Widget* getNullWidget() { return nullWidget; }
         void setMessage(std::string message);
         void setDuration(double seconds);
+        void saveVolume();
         std::map<std::string, int> getTimeFromSeconds(double seconds);
         bool hasSliderMoved = false;
 
@@ -80,6 +82,7 @@ class Application : public Fl_Double_Window
         static void save_cb(Fl_Widget *w, void *data);
         static void toggle_cb(Fl_Widget *w, void *data);
         static void time_cb(Fl_Widget *w, void *data);
+        static void volume_cb(Fl_Widget *w, void *data);
 };
 
 #endif

@@ -42,9 +42,16 @@ Application::Application(int w, int h, const char *l, int argc, char *argv[]) : 
 
     volume = new Fl_Slider(w - (BUTTON_WIDTH * 2) - SPACE, HEIGHT - SPACE - BUTTON_HEIGHT, (BUTTON_WIDTH * 2), BUTTON_HEIGHT);
     volume->type(FL_HORIZONTAL);
-    volume->step(1);
-    volume->bounds(0, 10);
+    volume->step(0.01);
+    volume->bounds(0, 1);
     volume->value(0);
+    volume->label("Volume");
+    volume->align(FL_ALIGN_TOP);
+    volume->callback(volume_cb, this);
+
+    volumeOutput = new Fl_Output(w - (BUTTON_WIDTH * 3), HEIGHT - SPACE - BUTTON_HEIGHT, BUTTON_WIDTH / 1.5, 30);
+    volumeOutput->value("0%");
+    volumeOutput->textsize(16);
 
     group->end();
 
@@ -55,7 +62,7 @@ Application::Application(int w, int h, const char *l, int argc, char *argv[]) : 
     resizable(group);
     show();
 
-    loadConfig(CONFIG_FILENAME);
+    AppConfig config = loadConfig(CONFIG_FILENAME);
 
     // Create and initialize the Audio object.
     this->audio = new Audio(this);
@@ -64,6 +71,11 @@ Application::Application(int w, int h, const char *l, int argc, char *argv[]) : 
         setMessage("Failed to initialize audio system.");
         this->dialog_cb(this->dialogWnd, this);
     }
+
+    // Get and set the last volume value since the app was closed.
+    double volumeValue = std::stod(config.volume);
+    volume->value(volumeValue);
+    volume_cb(volume, this);
 }
 
 int main(int argc, char *argv[])
