@@ -10,6 +10,10 @@
 // Forward declaration.
 class Application;
 
+/*
+ * The Audio class is a kind of interface allowing the application and the MiniAudio
+ * library to communicate with each other.
+ */
 class Audio {
     public:
         // Structure that holds the device data.

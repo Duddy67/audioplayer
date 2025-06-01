@@ -25,7 +25,7 @@ Audio::Audio(Application* app) : pApplication(app), contextInit(false), engineIn
 }
 
 /*
- * Destructor
+ * Destructor: Uninitializes all of the audio parameters before closing the app.
  */
 Audio::~Audio() {
     if (contextInit) {
@@ -42,6 +42,9 @@ Audio::~Audio() {
     delete pEngine;
 }
 
+/*
+ * Gathers all the capture and playback device info into an array.
+ */
 std::vector<Audio::DeviceInfo> Audio::getDevices(ma_device_type deviceType) {
     // Create a device array.
     std::vector<DeviceInfo> devices;
@@ -79,6 +82,8 @@ std::vector<Audio::DeviceInfo> Audio::getDevices(ma_device_type deviceType) {
     return devices;
 }
 
+/* Device getters. */
+
 std::vector<Audio::DeviceInfo> Audio::getOutputDevices() {
     return getDevices(ma_device_type_playback);
 }
@@ -87,6 +92,9 @@ std::vector<Audio::DeviceInfo> Audio::getInputDevices() {
     return getDevices(ma_device_type_capture);
 }
 
+/*
+ * Loads a given audio file.
+ */
 void Audio::loadFile(const char *filename)
 {
     printf("Load audio file '%s'\n", filename);
@@ -101,7 +109,7 @@ void Audio::loadFile(const char *filename)
     result = ma_sound_init_from_file(pEngine, filename, 0, NULL, NULL, pSound);
 
     if (result != MA_SUCCESS) {
-        printf("Failed to initialize audio engine.");
+        printf("Failed to initialize audio sound.");
         return;
     }
 
@@ -109,15 +117,19 @@ void Audio::loadFile(const char *filename)
 
     ma_uint64 totalFrames = 0;
     result = ma_sound_get_length_in_pcm_frames(pSound, &totalFrames);
+    // Reset the time slider flag.
     pApplication->hasSliderMoved = false;
 
     if (result != MA_SUCCESS) {
         printf("Failed to get sound length.\n");
     } else {
+        // Compute the sound length in seconds
         ma_uint64 sampleRate = ma_engine_get_sample_rate(pEngine);
         double totalSeconds = (double)totalFrames / sampleRate;
         printf("Sound duration: %.2f seconds\n", totalSeconds);
+        // Set the time slider new bounds.
         pApplication->getSlider("time")->bounds(0, totalSeconds);
+        // Inform the application about the sound duration.
         pApplication->setDuration(totalSeconds);
     }
 }
@@ -141,7 +153,7 @@ void Audio::toggle()
         // The sound is not played.
         if (!ma_sound_is_playing(pSound)) {
             ma_sound_start(pSound);
-            // Run the run function as a thread.
+            // Launch the run function as a thread.
             std::thread t(&Audio::run, this);
             t.detach();
         }
@@ -154,10 +166,16 @@ void Audio::toggle()
     return;
 }
 
+/*
+ * Computes the playback time (in seconds) while the sound is playing.
+ * Informs the time slider whenever a second is elapsed. 
+ * Note: This function is run in a thread (ie: asynchronously) to not block 
+  *      the application while a sound is played. 
+ */
 void Audio::run()
 {
-    // Computes playback time (in seconds) while the sound is playing.
     while (ma_sound_is_playing(pSound)) {
+        // First get the cursor current position.
         ma_uint64 framePosition = 0;
         ma_result result = ma_sound_get_cursor_in_pcm_frames(pSound, &framePosition);
 
@@ -168,8 +186,9 @@ void Audio::run()
 
         ma_uint64 sampleRate = ma_engine_get_sample_rate(pEngine);
 
+        // Check for the time slider.
         if (pApplication->hasSliderMoved) {
-            // Convert desired position in seconds to PCM frames
+            // Convert the time slider position in seconds to PCM frames
             framePosition = (ma_uint64)(pApplication->getSlider("time")->value() * sampleRate);
 
             // Synchronize the sound cursor position to the time slider's.
@@ -183,6 +202,7 @@ void Audio::run()
                 seconds = pApplication->getSlider("time")->value();  
             }
         }
+        // The time slider is running along with the sound stream.
         else {
             seconds = (double)framePosition / sampleRate;
         }
@@ -191,6 +211,7 @@ void Audio::run()
         printDuration(seconds);
         // Ensure the output updates in place
         fflush(stdout);  
+
         // Update the time slider value.
         pApplication->getSlider("time")->value(seconds);
         // Don't pass the time slider widget as first argument as it is used to detect
@@ -198,8 +219,10 @@ void Audio::run()
         // As the Audio class is not a widget, any widget type but Fl_Slider can be passed
         // instead. The first argument is not used by the callback function anyway.
         Application::time_cb(pApplication->getNullWidget(), pApplication);
+        // Redraw the time slider output (ie: the time counter).
         Fl::check();
 
+        // Delays the loop to avoid flooding the time slider output. 
         struct timespec ts = {.tv_sec = 0, .tv_nsec = 100 * 1000000}; // 100ms
         nanosleep(&ts, NULL);
     }
@@ -207,6 +230,9 @@ void Audio::run()
     return;
 }
 
+/*
+ * Checks whether the sound is playing or not. 
+ */
 bool Audio::isPlaying()
 {
     if (soundInit) {
@@ -216,6 +242,9 @@ bool Audio::isPlaying()
     return false;
 }
 
+/*
+ * Prints the sound playing duration in h m s formated time. 
+ */
 void Audio::printDuration(double seconds)
 {
     int totalSeconds = (int)seconds;
@@ -228,6 +257,7 @@ void Audio::printDuration(double seconds)
 
 /*
  * Displays both the input and output audio devices in the console.
+ * Function used for debugging purpose.
  */
 void Audio::printAllDevices()
 {

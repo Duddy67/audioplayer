@@ -79,7 +79,7 @@ class Application : public Fl_Double_Window
         static void ok_cb(Fl_Widget *w, void *data);
         static void cancel_cb(Fl_Widget *w, void *data);
         static void cancel_audio_settings_cb(Fl_Widget *w, void *data);
-        static void save_cb(Fl_Widget *w, void *data);
+        static void save_audio_settings_cb(Fl_Widget *w, void *data);
         static void toggle_cb(Fl_Widget *w, void *data);
         static void time_cb(Fl_Widget *w, void *data);
         static void volume_cb(Fl_Widget *w, void *data);

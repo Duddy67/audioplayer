@@ -1,5 +1,8 @@
 #include "main.h"
 
+/*
+ * Create the setting modal window and its input/output device drop down lists.
+ */
 void Application::audio_settings_cb(Fl_Widget *w, void *data)
 {
     Application* app = (Application*) data;
@@ -7,7 +10,7 @@ void Application::audio_settings_cb(Fl_Widget *w, void *data)
     // Build the modal window.
     if (app->audioSettings == 0) {
         app->audioSettings = new AudioSettings(app->x() + MODAL_WND_POS, app->y() + MODAL_WND_POS, 400, 200, "Audio Settings");
-        app->audioSettings->getSaveButton()->callback(save_cb, app);
+        app->audioSettings->getSaveButton()->callback(save_audio_settings_cb, app);
         app->audioSettings->getCancelButton()->callback(cancel_audio_settings_cb, app);
     }
 
@@ -69,11 +72,12 @@ void Application::audio_settings_cb(Fl_Widget *w, void *data)
 }
 
 
-void Application::save_cb(Fl_Widget* w, void* data)
+void Application::save_audio_settings_cb(Fl_Widget* w, void* data)
 {
     Application* app = (Application*) data;
     app->label(app->audioSettings->output->text());
 
+    // Save the new settings in the config file.
     AppConfig config = app->loadConfig(CONFIG_FILENAME);
     config.outputDevice = app->audioSettings->output->text();
     config.inputDevice = app->audioSettings->input->text();
