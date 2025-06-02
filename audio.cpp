@@ -75,6 +75,7 @@ std::vector<Audio::DeviceInfo> Audio::getDevices(ma_device_type deviceType) {
     for (ma_uint32 i = 0; i < deviceCount; ++i) {
         DeviceInfo info;
         info.name = pDeviceInfos[i].name;
+        info.id = pDeviceInfos[i].id;
         info.isDefault = pDeviceInfos[i].isDefault;
         devices.push_back(info);
     }
@@ -90,6 +91,29 @@ std::vector<Audio::DeviceInfo> Audio::getOutputDevices() {
 
 std::vector<Audio::DeviceInfo> Audio::getInputDevices() {
     return getDevices(ma_device_type_capture);
+}
+
+void Audio::setOutputDevice(const char *deviceName)
+{
+    ma_device_id targetDeviceID = {0};
+    bool found = false;
+    auto outputDevices = getOutputDevices();
+
+    for (ma_uint32 i = 0; i < (ma_uint32) outputDevices.size(); ++i) {
+        if (strcmp(outputDevices[i].name.c_str(), deviceName) == 0) {
+            std::cout << "Found target device: " << outputDevices[i].name << std::endl;
+            memcpy(&targetDeviceID, &outputDevices[i].id, sizeof(ma_device_id));
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        std::cerr << "Target device not found!" << std::endl;
+        ma_context_uninit(&context);
+        //return -1;
+    }
+
 }
 
 /*

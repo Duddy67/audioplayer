@@ -82,6 +82,8 @@ void Application::save_audio_settings_cb(Fl_Widget* w, void* data)
     config.outputDevice = app->audioSettings->output->text();
     config.inputDevice = app->audioSettings->input->text();
     app->saveConfig(config, CONFIG_FILENAME);
+    // Update the newly selected playback device. 
+    app->audio->setOutputDevice(config.outputDevice.c_str());
 
     app->audioSettings->hide();
 }

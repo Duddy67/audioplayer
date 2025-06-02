@@ -2,6 +2,7 @@
 #define AUDIO_H
 
 #include <string>
+#include <iostream>
 #include <vector>
 #include <thread>
 #include <time.h>
@@ -19,6 +20,7 @@ class Audio {
         // Structure that holds the device data.
         struct DeviceInfo {
             std::string name;
+            ma_device_id id;
             bool isDefault;
         };
 
@@ -30,6 +32,7 @@ class Audio {
         void printAllDevices();
         void loadFile(const char *fileName);
         void setVolume(float value);
+        void setOutputDevice(const char *deviceName);
         void toggle();
         void run();
         void printDuration(double seconds);
