@@ -36,6 +36,8 @@ class Audio {
         void toggle();
         void run();
         void printDuration(double seconds);
+        void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount);
+
         // Getters.
         ma_engine* getEngine() { return pEngine; }
         ma_sound* getSound() { return pSound; }
@@ -45,14 +47,19 @@ class Audio {
 
     private:
         ma_context context;
+        ma_decoder decoder;
         Application* pApplication;
         bool contextInit;
         bool engineInit;
         bool soundInit;
+        bool decoderInit;
+        bool is_playing = false;
         double seconds;
         ma_engine* pEngine;
         ma_sound* pSound;
         ma_timer* pTimer;
+        ma_device outputDevice;
+        ma_device_id outputDeviceID = {0};
         std::vector<DeviceInfo> getDevices(ma_device_type deviceType);
 
 };

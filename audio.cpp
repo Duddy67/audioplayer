@@ -93,16 +93,34 @@ std::vector<Audio::DeviceInfo> Audio::getInputDevices() {
     return getDevices(ma_device_type_capture);
 }
 
+void Audio::data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
+{
+    ma_decoder* pDecoder = (ma_decoder*)pDevice->pUserData;
+
+    if (pDecoder == NULL) {
+        return;
+    }
+
+    if (is_playing) {
+        // Read audio data from the decoder.
+        ma_decoder_read_pcm_frames(pDecoder, pOutput, frameCount, NULL);
+    }
+    // paused or stopped
+    else {
+        // Fill the audio output buffer with silence (ie: zero) when playback is paused or stopped.
+        memset(pOutput, 0, frameCount * pDevice->playback.channels * ma_get_bytes_per_sample(pDevice->playback.format));
+    }
+}
+
 void Audio::setOutputDevice(const char *deviceName)
 {
-    ma_device_id targetDeviceID = {0};
     bool found = false;
     auto outputDevices = getOutputDevices();
 
     for (ma_uint32 i = 0; i < (ma_uint32) outputDevices.size(); ++i) {
         if (strcmp(outputDevices[i].name.c_str(), deviceName) == 0) {
             std::cout << "Found target device: " << outputDevices[i].name << std::endl;
-            memcpy(&targetDeviceID, &outputDevices[i].id, sizeof(ma_device_id));
+            memcpy(&outputDeviceID, &outputDevices[i].id, sizeof(ma_device_id));
             found = true;
             break;
         }
@@ -113,7 +131,6 @@ void Audio::setOutputDevice(const char *deviceName)
         ma_context_uninit(&context);
         //return -1;
     }
-
 }
 
 /*
@@ -124,7 +141,7 @@ void Audio::loadFile(const char *filename)
     printf("Load audio file '%s'\n", filename);
 
     // Uninitialize the previous loaded sound if any.
-    if (soundInit) {
+    /*if (soundInit) {
         ma_sound_uninit(pSound);
         soundInit = false;
     }
@@ -137,10 +154,34 @@ void Audio::loadFile(const char *filename)
         return;
     }
 
-    soundInit = true;
+    soundInit = true;*/
+
+     // Initialize decoder
+    if (ma_decoder_init_file(filename, NULL, &decoder) != MA_SUCCESS) {
+        std::cerr << "Failed to load sound file." << std::endl;
+        ma_context_uninit(&context);
+        return;
+    }
+
+    // Configure device
+    ma_device_config deviceConfig = ma_device_config_init(ma_device_type_playback);
+    deviceConfig.playback.pDeviceID = &outputDeviceID;
+    deviceConfig.playback.format   = decoder.outputFormat;
+    deviceConfig.playback.channels = decoder.outputChannels;
+    deviceConfig.sampleRate        = decoder.outputSampleRate;
+    deviceConfig.dataCallback      = data_callback;
+    deviceConfig.pUserData         = &decoder;
+
+    // Initialize and start device
+    if (ma_device_init(&context, &deviceConfig, &device) != MA_SUCCESS) {
+        std::cerr << "Failed to initialize playback device." << std::endl;
+        ma_decoder_uninit(&decoder);
+        ma_context_uninit(&context);
+        return;
+    }
 
     ma_uint64 totalFrames = 0;
-    result = ma_sound_get_length_in_pcm_frames(pSound, &totalFrames);
+    result = ma_sound_get_length_in_pcm_frames(&decoder, &totalFrames);
     // Reset the time slider flag.
     pApplication->hasSliderMoved = false;
 
@@ -148,8 +189,8 @@ void Audio::loadFile(const char *filename)
         printf("Failed to get sound length.\n");
     } else {
         // Compute the sound length in seconds
-        ma_uint64 sampleRate = ma_engine_get_sample_rate(pEngine);
-        double totalSeconds = (double)totalFrames / sampleRate;
+        //ma_uint64 sampleRate = ma_engine_get_sample_rate(pEngine);
+        double totalSeconds = (double)totalFrames / decoder.outputSampleRate;
         printf("Sound duration: %.2f seconds\n", totalSeconds);
         // Set the time slider new bounds.
         pApplication->getSlider("time")->bounds(0, totalSeconds);
@@ -173,10 +214,25 @@ void Audio::setVolume(float value)
 void Audio::toggle()
 {
     // Make sure first a file is loaded.
-    if (soundInit) {
+    /*if (soundInit) {
         // The sound is not played.
         if (!ma_sound_is_playing(pSound)) {
             ma_sound_start(pSound);
+            // Launch the run function as a thread.
+            std::thread t(&Audio::run, this);
+            t.detach();
+        }
+        // The sound is played.
+        else {
+            ma_sound_stop(pSound);
+        }
+    }*/
+
+    if (decoderInit) {
+        // Toggle play/pause.
+        is_playing = !is_playing; 
+
+        if (!is_playing) {
             // Launch the run function as a thread.
             std::thread t(&Audio::run, this);
             t.detach();
@@ -259,8 +315,12 @@ void Audio::run()
  */
 bool Audio::isPlaying()
 {
-    if (soundInit) {
+    /*if (soundInit) {
         return ma_sound_is_playing(pSound);
+    }*/
+
+    if (decoderInit) {
+        return is_playing && !ma_decoder_at_end(decoder);
     }
 
     return false;
