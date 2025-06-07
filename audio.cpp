@@ -93,7 +93,7 @@ std::vector<Audio::DeviceInfo> Audio::getInputDevices() {
     return getDevices(ma_device_type_capture);
 }
 
-void Audio::data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
+void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
 {
     ma_decoder* pDecoder = (ma_decoder*)pDevice->pUserData;
 
@@ -101,9 +101,13 @@ void Audio::data_callback(ma_device* pDevice, void* pOutput, const void* pInput,
         return;
     }
 
-    if (is_playing) {
+    Audio* audio = (Audio*) pDevice->pUserData;
+
+    if (audio->isPlaying()) {
         // Read audio data from the decoder.
         ma_decoder_read_pcm_frames(pDecoder, pOutput, frameCount, NULL);
+        // Update cursor.
+        audio->cursor += frameCount;
     }
     // paused or stopped
     else {
@@ -173,15 +177,17 @@ void Audio::loadFile(const char *filename)
     deviceConfig.pUserData         = &decoder;
 
     // Initialize and start device
-    if (ma_device_init(&context, &deviceConfig, &device) != MA_SUCCESS) {
+    if (ma_device_init(&context, &deviceConfig, &outputDevice) != MA_SUCCESS) {
         std::cerr << "Failed to initialize playback device." << std::endl;
         ma_decoder_uninit(&decoder);
         ma_context_uninit(&context);
         return;
     }
 
+    ma_result result = ma_device_start(&outputDevice);
     ma_uint64 totalFrames = 0;
-    result = ma_sound_get_length_in_pcm_frames(&decoder, &totalFrames);
+    //ma_result result = ma_sound_get_length_in_pcm_frames(&decoder, &totalFrames);
+    ma_decoder_get_length_in_pcm_frames(&decoder, &totalFrames);
     // Reset the time slider flag.
     pApplication->hasSliderMoved = false;
 
@@ -238,9 +244,9 @@ void Audio::toggle()
             t.detach();
         }
         // The sound is played.
-        else {
+        /*else {
             ma_sound_stop(pSound);
-        }
+        }*/
     }
 
     return;
@@ -254,25 +260,28 @@ void Audio::toggle()
  */
 void Audio::run()
 {
-    while (ma_sound_is_playing(pSound)) {
+    //while (ma_sound_is_playing(pSound)) {
+    while (is_playing) {
         // First get the cursor current position.
-        ma_uint64 framePosition = 0;
-        ma_result result = ma_sound_get_cursor_in_pcm_frames(pSound, &framePosition);
+        ma_uint64 framePosition = cursor;
+        /*ma_result result = ma_sound_get_cursor_in_pcm_frames(pSound, &framePosition);
 
         if (result != MA_SUCCESS) {
             printf("Failed to get cursor position.");
             return;
-        }
+        }*/
 
-        ma_uint64 sampleRate = ma_engine_get_sample_rate(pEngine);
+        //ma_uint64 sampleRate = ma_engine_get_sample_rate(pEngine);
 
         // Check for the time slider.
         if (pApplication->hasSliderMoved) {
             // Convert the time slider position in seconds to PCM frames
-            framePosition = (ma_uint64)(pApplication->getSlider("time")->value() * sampleRate);
+            //framePosition = (ma_uint64)(pApplication->getSlider("time")->value() * sampleRate);
+            framePosition = (ma_uint64)(pApplication->getSlider("time")->value() * decoder.outputSampleRate);
 
             // Synchronize the sound cursor position to the time slider's.
-            result = ma_sound_seek_to_pcm_frame(pSound, framePosition);
+            //result = ma_sound_seek_to_pcm_frame(pSound, framePosition);
+            ma_result result = ma_decoder_seek_to_pcm_frame(&decoder, framePosition);
 
             if (result != MA_SUCCESS) {
                 printf("\nFailed to seek to new position.\n");
@@ -284,7 +293,8 @@ void Audio::run()
         }
         // The time slider is running along with the sound stream.
         else {
-            seconds = (double)framePosition / sampleRate;
+            //seconds = (double)framePosition / sampleRate;
+            seconds = (double)cursor.load() / decoder.outputSampleRate;
         }
 
         printf("\rPlayback Time: ");
@@ -320,7 +330,8 @@ bool Audio::isPlaying()
     }*/
 
     if (decoderInit) {
-        return is_playing && !ma_decoder_at_end(decoder);
+        //return is_playing && !ma_decoder_at_end(decoder);
+        return is_playing.load();
     }
 
     return false;

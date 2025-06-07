@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iostream>
+#include <atomic>
 #include <vector>
 #include <thread>
 #include <time.h>
@@ -29,6 +30,7 @@ class Audio {
 
         std::vector<DeviceInfo> getOutputDevices();
         std::vector<DeviceInfo> getInputDevices();
+        std::atomic<ma_uint64> cursor;
         void printAllDevices();
         void loadFile(const char *fileName);
         void setVolume(float value);
@@ -36,7 +38,7 @@ class Audio {
         void toggle();
         void run();
         void printDuration(double seconds);
-        void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount);
+        //void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount);
 
         // Getters.
         ma_engine* getEngine() { return pEngine; }
@@ -53,7 +55,7 @@ class Audio {
         bool engineInit;
         bool soundInit;
         bool decoderInit;
-        bool is_playing = false;
+        std::atomic<bool> is_playing = false;
         double seconds;
         ma_engine* pEngine;
         ma_sound* pSound;
