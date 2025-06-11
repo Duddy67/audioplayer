@@ -14,14 +14,14 @@ Audio::Audio(Application* app) : pApplication(app), contextInit(false), engineIn
         std::cerr << "Audio context initialized." << std::endl;
     }
 
-    pEngine = new ma_engine;
+    /*pEngine = new ma_engine;
 
     if (ma_engine_init(NULL, pEngine) == MA_SUCCESS) {
         engineInit = true;
         std::cerr << "Audio engine initialized." << std::endl;
     }
 
-    pSound = new ma_sound;
+    pSound = new ma_sound;*/
 }
 
 /*
@@ -93,21 +93,26 @@ std::vector<Audio::DeviceInfo> Audio::getInputDevices() {
     return getDevices(ma_device_type_capture);
 }
 
-void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
+static void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
 {
-    ma_decoder* pDecoder = (ma_decoder*)pDevice->pUserData;
+    //ma_decoder* pDecoder = (ma_decoder*)pDevice->pUserData;
+    AudioCallbackData* pCallbackData = (AudioCallbackData*)pDevice->pUserData;
+    //ma_decoder* pDecoder = (ma_decoder*)audio->getDecoder();
 
-    if (pDecoder == NULL) {
+    if (pCallbackData == nullptr || pCallbackData->pDecoder == nullptr) {
+    //if (audio->getDecoder() == NULL) {
         return;
     }
 
-    Audio* audio = (Audio*) pDevice->pUserData;
+    //Audio* audio = (Audio*) pDevice->pUserData;
 
-    if (audio->isPlaying()) {
+    if (pCallbackData->pIsPlaying) {
         // Read audio data from the decoder.
-        ma_decoder_read_pcm_frames(pDecoder, pOutput, frameCount, NULL);
+        ma_decoder_read_pcm_frames(pCallbackData->pDecoder, pOutput, frameCount, NULL);
+    std::cout << "data_callback " << *pCallbackData->pIsPlaying << std::endl;
         // Update cursor.
-        audio->cursor += frameCount;
+        //audio->cursor += frameCount;
+        pCallbackData->pCursor += frameCount;
     }
     // paused or stopped
     else {
@@ -167,6 +172,10 @@ void Audio::loadFile(const char *filename)
         return;
     }
 
+    callbackData.pDecoder = &decoder;
+    callbackData.pIsPlaying = &is_playing;
+    callbackData.pCursor = &cursor;
+
     // Configure device
     ma_device_config deviceConfig = ma_device_config_init(ma_device_type_playback);
     deviceConfig.playback.pDeviceID = &outputDeviceID;
@@ -174,7 +183,7 @@ void Audio::loadFile(const char *filename)
     deviceConfig.playback.channels = decoder.outputChannels;
     deviceConfig.sampleRate        = decoder.outputSampleRate;
     deviceConfig.dataCallback      = data_callback;
-    deviceConfig.pUserData         = &decoder;
+    deviceConfig.pUserData         = &callbackData;
 
     // Initialize and start device
     if (ma_device_init(&context, &deviceConfig, &outputDevice) != MA_SUCCESS) {
@@ -238,15 +247,15 @@ void Audio::toggle()
         // Toggle play/pause.
         is_playing = !is_playing; 
 
-        if (!is_playing) {
+        if (is_playing) {
             // Launch the run function as a thread.
             std::thread t(&Audio::run, this);
             t.detach();
         }
         // The sound is played.
-        /*else {
-            ma_sound_stop(pSound);
-        }*/
+        else {
+            //is_playing = false;
+        }
     }
 
     return;
@@ -263,7 +272,7 @@ void Audio::run()
     //while (ma_sound_is_playing(pSound)) {
     while (is_playing) {
         // First get the cursor current position.
-        ma_uint64 framePosition = cursor;
+        ma_uint64 framePosition = cursor.load();
         /*ma_result result = ma_sound_get_cursor_in_pcm_frames(pSound, &framePosition);
 
         if (result != MA_SUCCESS) {

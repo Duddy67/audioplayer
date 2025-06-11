@@ -12,6 +12,13 @@
 // Forward declaration.
 class Application;
 
+// 
+struct AudioCallbackData {
+    ma_decoder *pDecoder;
+    std::atomic<bool> *pIsPlaying;
+    std::atomic<ma_uint64> *pCursor;
+};
+
 /*
  * The Audio class is a kind of interface allowing the application and the MiniAudio
  * library to communicate with each other.
@@ -43,6 +50,7 @@ class Audio {
         // Getters.
         ma_engine* getEngine() { return pEngine; }
         ma_sound* getSound() { return pSound; }
+        ma_decoder getDecoder() { return decoder; }
         double getSeconds() { return seconds; }
         bool isContextInit() { return contextInit; }
         bool isPlaying();
@@ -51,6 +59,7 @@ class Audio {
         ma_context context;
         ma_decoder decoder;
         Application* pApplication;
+        AudioCallbackData callbackData;
         bool contextInit;
         bool engineInit;
         bool soundInit;

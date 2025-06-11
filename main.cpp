@@ -73,7 +73,7 @@ Application::Application(int w, int h, const char *l, int argc, char *argv[]) : 
     }
 
     audio->setOutputDevice(config.outputDevice.c_str());
-    audio->printAllDevices();
+    //audio->printAllDevices();
 
     // Get and set the last volume value since the app was closed.
     double volumeValue = std::stod(config.volume);
