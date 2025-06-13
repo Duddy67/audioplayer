@@ -39,6 +39,11 @@ void Application::time_cb(Fl_Widget *w, void *data)
 
     // Get the seconds elapsed (from the time value slider).
     double seconds = app->getSlider("time")->value();
+
+    if (app->hasSliderMoved && app->audio->isEndOfFile()) {
+        printf("\nTime slider has been moved.\n");
+        app->audio->setCursor(seconds);
+    }
     // Convert the seconds in hours minutes seconds time format.
     std::map time = app->getTimeFromSeconds(seconds);
 
