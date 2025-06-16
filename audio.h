@@ -12,12 +12,12 @@
 // Forward declaration.
 class Application;
 
-// 
+// Structure used to manipulate some Audio class members through the data_callback function.  
 struct AudioCallbackData {
     ma_decoder *pDecoder;
-    std::atomic<bool> *pIsPlaying;
     std::atomic<ma_uint64> *pCursor;
-    class Audio* pInstance;  // <== pointer to the owning class
+    // Pointer to the owning class.
+    class Audio* pInstance;  
 };
 
 /*
@@ -47,11 +47,11 @@ class Audio {
         void toggle();
         void run();
         void printDuration(double seconds);
-        //void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount);
 
         // Getters.
         ma_decoder getDecoder() { return decoder; }
         double getSeconds() { return seconds; }
+        float getVolume() { return volume.load(std::memory_order_relaxed); }
         bool isContextInit() { return contextInit; }
         bool isPlaying();
         bool isEndOfFile() { return cursor.load(std::memory_order_relaxed) >= totalFrames; }
@@ -66,13 +66,17 @@ class Audio {
         bool decoderInit = false;
         bool outputDeviceInit = false;
         ma_uint64 totalFrames;
+        const ma_format defaultOutputFormat = ma_format_f32;
+        const ma_uint32 defaultOutputChannels = 2;
+        const ma_uint32 defaultOutputSampleRate = 44100;
         std::atomic<bool> is_playing = false;
+        std::atomic<float> volume = 1.0f;
         double seconds;
         ma_device outputDevice;
         ma_device_id outputDeviceID = {0};
         std::vector<DeviceInfo> getDevices(ma_device_type deviceType);
+        bool storeOriginalFileFormat(const char* filename);
         void uninit();
-
 };
 
 #endif // AUDIO_H
