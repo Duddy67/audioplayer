@@ -13,18 +13,28 @@ Audio::Audio(Application* app) : pApplication(app), contextInit(false) {
         contextInit = true;
         std::cerr << "Audio context initialized." << std::endl;
     }
+
+    // Store pointer to this instance.
+    callbackData.pInstance = this;
+    callbackData.pIsPlaying = &is_playing;
+    callbackData.pApplication = app;
 }
 
 /*
  * Destructor: Uninitializes all of the audio parameters before closing the app.
  */
 Audio::~Audio() {
+    uninit();
+
     if (contextInit) {
         ma_context_uninit(&context);
         std::cerr << "Audio context uninitialized." << std::endl;
     }
 }
 
+/*
+ * Uninitializes both output device and decoder parameters.
+ */
 void Audio::uninit()
 {
     if (outputDeviceInit) {
@@ -87,48 +97,6 @@ std::vector<Audio::DeviceInfo> Audio::getInputDevices() {
     return getDevices(ma_device_type_capture);
 }
 
-/*
- * Callback used by MiniAudio to feed audio data to the device.
- */
-static void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
-{
-    AudioCallbackData* pCallbackData = (AudioCallbackData*)pDevice->pUserData;
-
-    if (pCallbackData == nullptr || pCallbackData->pDecoder == nullptr) {
-        return;
-    }
-
-    float volume = pCallbackData->pInstance->getVolume();
-
-    if (pCallbackData->pInstance->isPlaying()) {
-        // Read audio data from the decoder.
-        ma_decoder_read_pcm_frames(pCallbackData->pDecoder, pOutput, frameCount, NULL);
-        // Update cursor.
-        pCallbackData->pCursor->fetch_add(frameCount, std::memory_order_relaxed);
-    }
-    // paused or stopped
-    else {
-        // Fill the audio output buffer with silence (ie: zero) when playback is paused or stopped.
-        memset(pOutput, 0, frameCount * pDevice->playback.channels * ma_get_bytes_per_sample(pDevice->playback.format));
-        //std::cout << "Not playing (frames): " << pCallbackData->pCursor->load(std::memory_order_relaxed) << std::endl;
-        //std::cout << "is_playing" << *pCallbackData->pIsPlaying << std::endl;
-        // The cursor has reached the end of the file
-        if (pCallbackData->pInstance->isEndOfFile()) {
-            pCallbackData->pInstance->autoStop();
-        }
-    }
-
-    if (volume != 1.0f && pCallbackData->pDecoder->outputFormat == ma_format_f32) {
-        printf("Volume: %.2f \n", volume);
-        float* samples = (float*)pOutput;
-        size_t sampleCount = frameCount * pCallbackData->pDecoder->outputChannels;
-
-        for (size_t i = 0; i < sampleCount; ++i) {
-            samples[i] *= volume;
-        }
-    }
-}
-
 void Audio::setOutputDevice(const char *deviceName)
 {
     bool found = false;
@@ -151,6 +119,55 @@ void Audio::setOutputDevice(const char *deviceName)
 }
 
 /*
+ * Callback used by MiniAudio to feed audio data to the device.
+ */
+static void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
+{
+    AudioCallbackData* pCallbackData = (AudioCallbackData*)pDevice->pUserData;
+
+    if (pCallbackData == nullptr || pCallbackData->pDecoder == nullptr) {
+        return;
+    }
+
+    float volume = pCallbackData->pInstance->getVolume();
+
+    if (pCallbackData->pInstance->isPlaying() && !pCallbackData->pInstance->isEndOfFile()) {
+        // Read audio data from the decoder.
+        ma_decoder_read_pcm_frames(pCallbackData->pDecoder, pOutput, frameCount, NULL);
+        // Update cursor.
+        pCallbackData->pCursor->fetch_add(frameCount, std::memory_order_relaxed);
+    }
+    // paused or stopped
+    else {
+        // Fill the audio output buffer with silence (ie: zero) when playback is paused or stopped.
+        memset(pOutput, 0, frameCount * pDevice->playback.channels * ma_get_bytes_per_sample(pDevice->playback.format));
+
+        // The is_playing flag is still true but the cursor has reached the end of the
+        // file, so no sound is played.
+        if (pCallbackData->pInstance->isPlaying() && pCallbackData->pInstance->isEndOfFile()) {
+printf("isPlaying(): %d\n", pCallbackData->pInstance->isPlaying());
+            // Set the is_playing flag to false.
+            // Important: This flag must be set here to prevent possible race condition problems. 
+            pCallbackData->pIsPlaying->store(false, std::memory_order_relaxed);
+            // Set the FLTK slider's cursor position at the very end of the stroke.
+            pCallbackData->pApplication->getSlider("time")->value(pCallbackData->pInstance->getTotalSeconds());
+            // Update the application toggle button.
+            pCallbackData->pApplication->updateToggleButton();
+        }
+    }
+
+    // Set volume accordingly.
+    if (volume != 1.0f && pCallbackData->pDecoder->outputFormat == ma_format_f32) {
+        float* samples = (float*)pOutput;
+        size_t sampleCount = frameCount * pCallbackData->pDecoder->outputChannels;
+
+        for (size_t i = 0; i < sampleCount; ++i) {
+            samples[i] *= volume;
+        }
+    }
+}
+
+/*
  * Loads a given audio file.
  */
 void Audio::loadFile(const char *filename)
@@ -168,7 +185,6 @@ void Audio::loadFile(const char *filename)
     // First store the original data file format.
     if (!storeOriginalFileFormat(filename)) {
         std::cerr << "Failed to load audio file." << std::endl;
-        ma_context_uninit(&context);
         return;
     }
 
@@ -177,7 +193,6 @@ void Audio::loadFile(const char *filename)
 
     if (ma_decoder_init_file(filename, &decoderConfig, &decoder) != MA_SUCCESS) {
         std::cerr << "Failed to initialize decoder with conversion." << std::endl;
-        ma_context_uninit(&context);
         return;
     }
 
@@ -188,7 +203,6 @@ void Audio::loadFile(const char *filename)
     // Set the callbackData parameters used in the MiniAudio callback function.
     callbackData.pDecoder = &decoder;
     callbackData.pCursor = &cursor;
-    callbackData.pInstance = this;
 
     // Configure device parameters.
     ma_device_config deviceConfig = ma_device_config_init(ma_device_type_playback);
@@ -203,36 +217,49 @@ void Audio::loadFile(const char *filename)
     if (ma_device_init(&context, &deviceConfig, &outputDevice) != MA_SUCCESS) {
         std::cerr << "Failed to initialize playback device." << std::endl;
         ma_decoder_uninit(&decoder);
-        ma_context_uninit(&context);
         return;
     }
 
     ma_result result = ma_device_start(&outputDevice);
+
+    if (result != MA_SUCCESS) {
+        printf("Failed to get sound length.\n");
+        uninit();
+        return;
+    }
+
+    setNewFile();
+}
+
+void Audio::setNewFile()
+{
     totalFrames = 0;
     ma_decoder_get_length_in_pcm_frames(&decoder, &totalFrames);
     // Reset the time slider flag.
     pApplication->hasSliderMoved = false;
 
-    if (result != MA_SUCCESS) {
-        printf("Failed to get sound length.\n");
-    } else {
-        // Compute the file length in seconds
-        double totalSeconds = (double)totalFrames / decoder.outputSampleRate;
-        printf("Sound duration: %.2f seconds\n", totalSeconds);
-        // Set the time slider new bounds.
-        pApplication->getSlider("time")->bounds(0, totalSeconds);
-        // Reset the slider's cursor value (in case of new file loading).
-        pApplication->getSlider("time")->value(0);
-        // Inform the application about the sound duration.
-        pApplication->setDuration(totalSeconds);
-        // Reset the time counter.
-        Application::time_cb(pApplication->getNullWidget(), pApplication);
-    }
+    // Compute the file length in seconds
+    double totalSeconds = (double)totalFrames / decoder.outputSampleRate;
+    printf("Sound duration: %.2f seconds\n", totalSeconds);
+
+    // Set the time slider new bounds.
+    pApplication->getSlider("time")->bounds(0, totalSeconds);
+    // Reset the slider's cursor value (in case of new file loading).
+    pApplication->getSlider("time")->value(0);
+    // Inform the application about the sound duration.
+    pApplication->setDuration(totalSeconds);
+    // Reset the time counter.
+    Application::time_cb(pApplication->getNullWidget(), pApplication);
+
+    OriginalFileFormat format = getOriginalFileFormat();
+    std::cout << "File channels: " << format.outputChannels << std::endl;
+    std::cout << "File sample rate: " << format.outputSampleRate << std::endl;
+    std::cout << "File format: " << format.outputFormat << std::endl;
 }
 
 void Audio::setVolume(float value)
 {
-    // Make sure first a file is loaded.
+    // First make sure a file is loaded.
     if (decoderInit) {
         volume.store(std::clamp(value, 0.0f, 1.0f), std::memory_order_relaxed);
     }
@@ -243,19 +270,20 @@ void Audio::setVolume(float value)
  */
 void Audio::toggle()
 {
-    // Make sure first a file is loaded.
+    // First make sure a file is loaded.
     if (decoderInit) {
-        // Toggle play/pause.
-        is_playing = !is_playing; 
+        // Toggle play/pause (ie: is_playing = !is_playing).
+        bool expected = is_playing.load(std::memory_order_relaxed);
 
-        if (is_playing) {
+        while (!is_playing.compare_exchange_weak(expected, !expected, std::memory_order_relaxed)) {
+            // expected is updated automatically with current value on failure.
+            // loop until successful.
+        }
+
+        if (is_playing.load(std::memory_order_relaxed) && !isEndOfFile()) {
             // Launch the run function as a thread.
             std::thread t(&Audio::run, this);
             t.detach();
-        }
-        // The sound is played.
-        else {
-            //is_playing = false;
         }
     }
 
@@ -273,12 +301,10 @@ void Audio::run()
     while (isPlaying()) {
         // First get the cursor current position.
         ma_uint64 framePosition = cursor.load(std::memory_order_relaxed);
-    //std::cout << "framePosition (frames): " << framePosition << std::endl;
 
         // Check for the time slider.
         if (pApplication->hasSliderMoved) {
             // Convert the time slider position from seconds to PCM frames
-            //framePosition = (ma_uint64)(pApplication->getSlider("time")->value() * sampleRate);
             framePosition = (ma_uint64)(pApplication->getSlider("time")->value() * decoder.outputSampleRate);
 
             // Synchronize the sound cursor position to the time slider's.
@@ -295,7 +321,6 @@ void Audio::run()
         }
         // The time slider is running along with the sound stream.
         else {
-            //seconds = (double)framePosition / sampleRate;
             seconds = (double)cursor.load(std::memory_order_relaxed) / decoder.outputSampleRate;
         }
 
@@ -311,6 +336,7 @@ void Audio::run()
         // As the Audio class is not a widget, any widget type but Fl_Slider can be passed
         // instead. The first argument is not used by the callback function anyway.
         Application::time_cb(pApplication->getNullWidget(), pApplication);
+
         // Redraw the time slider output (ie: the time counter).
         Fl::check();
 
@@ -336,24 +362,33 @@ void Audio::setCursor(double seconds)
 bool Audio::isPlaying()
 {
     if (decoderInit) {
-        return is_playing.load(std::memory_order_relaxed) && !isEndOfFile();
+        return is_playing.load(std::memory_order_relaxed);
     }
 
     return false;
 }
 
 /*
- * Function called when the end of the file is reached.
+ * Returns the total duration of the file in seconds.
  */
-void Audio::autoStop() 
+double Audio::getTotalSeconds()
+{
+    double totalSeconds = 0;
+
+    if (decoderInit) {
+        totalSeconds = (double)totalFrames / decoder.outputSampleRate;
+    }
+
+    return totalSeconds;
+}
+
+void Audio::restart() 
 {
     // Check first the end of the file is reached.
-    if (is_playing && isEndOfFile()) {
-        // Switch the start/stop button to stop.
-        Application::toggle_cb(pApplication->getNullWidget(), pApplication);
-        // Set the slider's cursor position at the very end of the stroke.
-        double totalSeconds = (double)totalFrames / decoder.outputSampleRate;
-        pApplication->getSlider("time")->value(totalSeconds);
+    if (!is_playing && isEndOfFile()) {
+        printf("restart \n");
+        cursor.store(0, std::memory_order_relaxed);
+        pApplication->getSlider("time")->value(0);
     }
 }
 
@@ -379,13 +414,14 @@ bool Audio::storeOriginalFileFormat(const char* filename)
     ma_decoder decoderProbe;
 
     if (ma_decoder_init_file(filename, NULL, &decoderProbe) != MA_SUCCESS) {
+        ma_decoder_uninit(&decoderProbe);  
         return false;
     }
 
     // Retrieve data about the original file format.
-    std::cout << "File channels: " << decoderProbe.outputChannels << std::endl;
-    std::cout << "File sample rate: " << decoderProbe.outputSampleRate << std::endl;
-    std::cout << "File format: " << decoderProbe.outputFormat << std::endl;
+    originalFileFormat.outputChannels = decoderProbe.outputChannels;
+    originalFileFormat.outputSampleRate = decoderProbe.outputSampleRate;
+    originalFileFormat.outputFormat = decoderProbe.outputFormat;
 
     // Done probing
     ma_decoder_uninit(&decoderProbe);  

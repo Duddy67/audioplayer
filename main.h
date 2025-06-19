@@ -67,6 +67,7 @@ class Application : public Fl_Double_Window
         void setMessage(std::string message);
         void setDuration(double seconds);
         void saveVolume();
+        void updateToggleButton();
         std::map<std::string, int> getTimeFromSeconds(double seconds);
         bool hasSliderMoved = false;
 

@@ -5,19 +5,7 @@ void Application::toggle_cb(Fl_Widget* w, void* data)
 {
     Application* app = (Application*) data;
     app->audio->toggle();
-
-    // Display the next action icon (play or stop) according to the sound current state.
-    if (app->audio->isPlaying()) {
-        // Stop icon.
-        app->getButton()->label("@||");
-    }
-    // The sound is not played
-    else {
-        // Play icon.
-        app->getButton()->label("@>");
-    }
-
-    Fl::check();
+    app->updateToggleButton();
 }
 
 /*

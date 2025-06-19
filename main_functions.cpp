@@ -95,3 +95,19 @@ void Application::saveVolume()
     saveConfig(config, CONFIG_FILENAME);
 }
 
+void Application::updateToggleButton()
+{
+    // Display the next action icon (play or stop) according to the sound current state.
+    if (audio->isPlaying()) {
+        // Stop icon.
+        getButton()->label("@||");
+    }
+    // The sound is not played
+    else {
+        // Play icon.
+        getButton()->label("@>");
+    }
+
+    Fl::check();
+}
+
