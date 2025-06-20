@@ -47,6 +47,7 @@ class Audio {
         bool decoderInit = false;
         bool outputDeviceInit = false;
         ma_uint64 totalFrames;
+        std::atomic<ma_uint64> cursor;
         const ma_format defaultOutputFormat = ma_format_f32;
         const ma_uint32 defaultOutputChannels = 2;
         const ma_uint32 defaultOutputSampleRate = 44100;
@@ -67,7 +68,6 @@ class Audio {
 
         std::vector<DeviceInfo> getOutputDevices();
         std::vector<DeviceInfo> getInputDevices();
-        std::atomic<ma_uint64> cursor;
         void printAllDevices();
         void loadFile(const char *fileName);
         void setVolume(float value);

@@ -4,6 +4,13 @@
 void Application::toggle_cb(Fl_Widget* w, void* data)
 {
     Application* app = (Application*) data;
+
+    // Check for the end of file.
+    if (app->audio->isEndOfFile()) {
+        // Play the audio file from the top.
+        app->audio->restart();
+    }
+
     app->audio->toggle();
     app->updateToggleButton();
 }
@@ -29,7 +36,7 @@ void Application::time_cb(Fl_Widget *w, void *data)
     double seconds = app->getSlider("time")->value();
 
     if (app->hasSliderMoved && app->audio->isEndOfFile()) {
-        printf("\nTime slider has been moved.\n");
+        printf("\nTime slider has been moved. %f \n", seconds);
         app->audio->setCursor(seconds);
     }
     // Convert the seconds in hours minutes seconds time format.

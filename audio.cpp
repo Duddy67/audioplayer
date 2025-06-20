@@ -114,7 +114,6 @@ void Audio::setOutputDevice(const char *deviceName)
     if (!found) {
         std::cerr << "Target device not found!" << std::endl;
         ma_context_uninit(&context);
-        //return -1;
     }
 }
 
@@ -145,7 +144,6 @@ static void data_callback(ma_device* pDevice, void* pOutput, const void* pInput,
         // The is_playing flag is still true but the cursor has reached the end of the
         // file, so no sound is played.
         if (pCallbackData->pInstance->isPlaying() && pCallbackData->pInstance->isEndOfFile()) {
-printf("isPlaying(): %d\n", pCallbackData->pInstance->isPlaying());
             // Set the is_playing flag to false.
             // Important: This flag must be set here to prevent possible race condition problems. 
             pCallbackData->pIsPlaying->store(false, std::memory_order_relaxed);
@@ -199,7 +197,7 @@ void Audio::loadFile(const char *filename)
     decoderInit = true;
 
     // Reset the cursor.
-    cursor = 0;
+    cursor.store(0, std::memory_order_relaxed);
     // Set the callbackData parameters used in the MiniAudio callback function.
     callbackData.pDecoder = &decoder;
     callbackData.pCursor = &cursor;
@@ -357,7 +355,7 @@ void Audio::setCursor(double seconds)
 }
 
 /*
- * Checks whether the sound is playing or not. 
+ * Returns the is_playing flag value.
  */
 bool Audio::isPlaying()
 {
@@ -386,9 +384,14 @@ void Audio::restart()
 {
     // Check first the end of the file is reached.
     if (!is_playing && isEndOfFile()) {
-        printf("restart \n");
-        cursor.store(0, std::memory_order_relaxed);
-        pApplication->getSlider("time")->value(0);
+        // Reset both cursors to zero.
+        setCursor(0.0);
+        pApplication->getSlider("time")->value(0.0);
+
+        // Synchronize the sound cursor position to zero.
+        ma_decoder_seek_to_pcm_frame(&decoder, 0);
+        // Set the FLTK time slider and its counter accordingly.
+        Application::time_cb(pApplication->getNullWidget(), pApplication);
     }
 }
 
