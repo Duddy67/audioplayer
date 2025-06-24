@@ -6,7 +6,7 @@ void Application::toggle_cb(Fl_Widget* w, void* data)
     Application* app = (Application*) data;
 
     // Check for the end of file.
-    if (app->audio->isEndOfFile()) {
+    if (app->audio->isDecoderInit() && app->audio->isEndOfFile()) {
         // Play the audio file from the top.
         app->audio->restart();
     }

@@ -60,7 +60,8 @@ class Audio {
         OriginalFileFormat originalFileFormat;
         bool storeOriginalFileFormat(const char* filename);
         void uninit();
-        void setNewFile();
+        bool initializeOutputDevice();
+        void preparePlayer();
 
     public:
         Audio(Application *app);
@@ -85,6 +86,7 @@ class Audio {
         float getVolume() { return volume.load(std::memory_order_relaxed); }
         bool isContextInit() { return contextInit; }
         bool isPlaying();
+        bool isDecoderInit() { return decoderInit; }
         bool isEndOfFile() { return cursor.load(std::memory_order_relaxed) >= totalFrames; }
         void restart();
 };

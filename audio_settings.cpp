@@ -23,9 +23,8 @@ void Application::audio_settings_cb(Fl_Widget *w, void *data)
         auto inputDevices = app->audio->getInputDevices();
         AppConfig config = app->loadConfig(CONFIG_FILENAME);
 
-        // Create the very first option (ie: zero index).
-        app->audioSettings->output->add("None");
         int defaultSelec = 0, selection = 0;
+        bool found = false;
 
         for (size_t i = 0; i < outputDevices.size(); ++i) {
             // Create an option for the device.
@@ -33,22 +32,21 @@ void Application::audio_settings_cb(Fl_Widget *w, void *data)
 
             // Check for selection.
             if (outputDevices[i].isDefault) {
-                defaultSelec = i + 1;
+                defaultSelec = i;
             }
             else if (config.outputDevice.compare(outputDevices[i].name.c_str()) == 0) {
-                selection = i + 1;
+                selection = i;
+                found = true;
             }
         }
 
         // Set the device selection.
-        selection = (selection > 0) ? selection : defaultSelec;
+        selection = (found) ? selection : defaultSelec;
         app->audioSettings->output->value(selection);
 
         // Reset selection variables.
         defaultSelec = 0, selection = 0;
-
-        // Create the very first option (ie: zero index).
-        app->audioSettings->input->add("None");
+        found = false;
 
         for (size_t i = 0; i < inputDevices.size(); ++i) {
             // Create an option for the device.
@@ -56,15 +54,16 @@ void Application::audio_settings_cb(Fl_Widget *w, void *data)
 
             // Check for selection.
             if (inputDevices[i].isDefault) {
-                defaultSelec = i + 1;
+                defaultSelec = i;
             }
             else if (config.inputDevice.compare(inputDevices[i].name.c_str()) == 0) {
-                selection = i + 1;
+                selection = i;
+                found = true;
             }
         }
 
         // Set the device selection.
-        selection = (selection > 0) ? selection : defaultSelec;
+        selection = (found) ? selection : defaultSelec;
         app->audioSettings->input->value(selection);
     }
 

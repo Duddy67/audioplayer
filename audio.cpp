@@ -14,10 +14,13 @@ Audio::Audio(Application* app) : pApplication(app), contextInit(false) {
         std::cerr << "Audio context initialized." << std::endl;
     }
 
-    // Store pointer to this instance.
-    callbackData.pInstance = this;
+    // Set the callbackData parameters used in the MiniAudio callback function.
     callbackData.pIsPlaying = &is_playing;
     callbackData.pApplication = app;
+    callbackData.pDecoder = &decoder;
+    callbackData.pCursor = &cursor;
+    // Store pointer to this instance.
+    callbackData.pInstance = this;
 }
 
 /*
@@ -97,14 +100,19 @@ std::vector<Audio::DeviceInfo> Audio::getInputDevices() {
     return getDevices(ma_device_type_capture);
 }
 
+/*
+ * Set the output to the given device.
+ */
 void Audio::setOutputDevice(const char *deviceName)
 {
     bool found = false;
     auto outputDevices = getOutputDevices();
 
+    // Loop through the available devices. 
     for (ma_uint32 i = 0; i < (ma_uint32) outputDevices.size(); ++i) {
         if (strcmp(outputDevices[i].name.c_str(), deviceName) == 0) {
             std::cout << "Found target device: " << outputDevices[i].name << std::endl;
+            // Set the given device id.
             memcpy(&outputDeviceID, &outputDevices[i].id, sizeof(ma_device_id));
             found = true;
             break;
@@ -113,7 +121,20 @@ void Audio::setOutputDevice(const char *deviceName)
 
     if (!found) {
         std::cerr << "Target device not found!" << std::endl;
-        ma_context_uninit(&context);
+        return;
+    }
+
+    // An audio file has been loaded.
+    if (decoderInit) {
+        // Stop playback.
+        ma_device_stop(&outputDevice);      
+        // Release device resources.
+        ma_device_uninit(&outputDevice);    
+
+        if(!initializeOutputDevice()) {
+            std::cerr << "Failed to initialize output device." << std::endl;
+            return;
+        }
     }
 }
 
@@ -196,11 +217,21 @@ void Audio::loadFile(const char *filename)
 
     decoderInit = true;
 
-    // Reset the cursor.
+    if(!initializeOutputDevice()) {
+        std::cerr << "Failed to initialize output device." << std::endl;
+        return;
+    }
+
+    preparePlayer();
+}
+
+/*
+ * Initializes and starts the output device selected by the user.
+ */
+bool Audio::initializeOutputDevice()
+{
+    // Reset the cursor position.
     cursor.store(0, std::memory_order_relaxed);
-    // Set the callbackData parameters used in the MiniAudio callback function.
-    callbackData.pDecoder = &decoder;
-    callbackData.pCursor = &cursor;
 
     // Configure device parameters.
     ma_device_config deviceConfig = ma_device_config_init(ma_device_type_playback);
@@ -215,7 +246,7 @@ void Audio::loadFile(const char *filename)
     if (ma_device_init(&context, &deviceConfig, &outputDevice) != MA_SUCCESS) {
         std::cerr << "Failed to initialize playback device." << std::endl;
         ma_decoder_uninit(&decoder);
-        return;
+        return false;
     }
 
     ma_result result = ma_device_start(&outputDevice);
@@ -223,13 +254,16 @@ void Audio::loadFile(const char *filename)
     if (result != MA_SUCCESS) {
         printf("Failed to get sound length.\n");
         uninit();
-        return;
+        return false;
     }
 
-    setNewFile();
+    return true;
 }
 
-void Audio::setNewFile()
+/*
+ * Sets some player's parameters before the audio file is played.
+ */
+void Audio::preparePlayer()
 {
     totalFrames = 0;
     ma_decoder_get_length_in_pcm_frames(&decoder, &totalFrames);
