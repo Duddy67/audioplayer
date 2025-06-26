@@ -111,3 +111,16 @@ void Application::updateToggleButton()
     Fl::check();
 }
 
+void Application::dispayFileInfo(std::map<std::string, std::string> info)
+{
+    // Clear the previous display.
+    fileInfo->value("");
+    // Concatenate data to display.
+    std::string concat = "File name: " + info["fileName"] + "\n";
+    concat = concat + "Channels: " + info["outputChannels"] + "\n";
+    concat = concat + "Sample rate: " + info["outputSampleRate"] + "\n";
+    concat = concat + "Format: " + info["outputFormat"];
+    // Display info.
+    fileInfo->value(concat.c_str());
+}
+

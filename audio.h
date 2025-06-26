@@ -35,6 +35,7 @@ class Audio {
             bool isDefault;
         };
         struct OriginalFileFormat {
+            std::string fileName;
             ma_uint32 outputChannels;
             ma_uint32 outputSampleRate;
             ma_format outputFormat;
@@ -56,8 +57,8 @@ class Audio {
         double seconds;
         ma_device outputDevice;
         ma_device_id outputDeviceID = {0};
-        std::vector<DeviceInfo> getDevices(ma_device_type deviceType);
         OriginalFileFormat originalFileFormat;
+        std::vector<DeviceInfo> getDevices(ma_device_type deviceType);
         bool storeOriginalFileFormat(const char* filename);
         void uninit();
         bool initializeOutputDevice();
@@ -82,7 +83,7 @@ class Audio {
         ma_decoder getDecoder() { return decoder; }
         double getSeconds() { return seconds; }
         double getTotalSeconds();
-        OriginalFileFormat getOriginalFileFormat() { return originalFileFormat; }
+        std::map<std::string, std::string> getOriginalFileFormat();
         float getVolume() { return volume.load(std::memory_order_relaxed); }
         bool isContextInit() { return contextInit; }
         bool isPlaying();

@@ -283,10 +283,7 @@ void Audio::preparePlayer()
     // Reset the time counter.
     Application::time_cb(pApplication->getNullWidget(), pApplication);
 
-    OriginalFileFormat format = getOriginalFileFormat();
-    std::cout << "File channels: " << format.outputChannels << std::endl;
-    std::cout << "File sample rate: " << format.outputSampleRate << std::endl;
-    std::cout << "File format: " << format.outputFormat << std::endl;
+    pApplication->dispayFileInfo(getOriginalFileFormat());
 }
 
 void Audio::setVolume(float value)
@@ -456,6 +453,7 @@ bool Audio::storeOriginalFileFormat(const char* filename)
     }
 
     // Retrieve data about the original file format.
+    originalFileFormat.fileName = filename;
     originalFileFormat.outputChannels = decoderProbe.outputChannels;
     originalFileFormat.outputSampleRate = decoderProbe.outputSampleRate;
     originalFileFormat.outputFormat = decoderProbe.outputFormat;
@@ -464,6 +462,22 @@ bool Audio::storeOriginalFileFormat(const char* filename)
     ma_decoder_uninit(&decoderProbe);  
 
     return true;
+}
+
+/*
+ * Returns some data about the original file as an associative array.
+ */
+std::map<std::string, std::string> Audio::getOriginalFileFormat()
+{
+    // Convert file format parameters to string.
+    std::map<std::string, std::string> original{
+        {"fileName", originalFileFormat.fileName},
+        {"outputChannels", std::to_string(originalFileFormat.outputChannels)},
+        {"outputSampleRate", std::to_string(originalFileFormat.outputSampleRate)},
+        {"outputFormat", std::to_string(originalFileFormat.outputFormat)}
+    };
+
+   return original;
 }
 
 /*

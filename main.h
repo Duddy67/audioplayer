@@ -2,6 +2,7 @@
 #define MAIN_H
 #include <FL/Fl.H>
 #include <FL/Fl_Double_Window.H>
+#include <FL/Fl_Multiline_Output.H>
 #include <FL/Fl_Menu_Bar.H>
 #include <FL/Fl_Menu_Item.H>
 #include <FL/Fl_Slider.H>
@@ -44,6 +45,7 @@ class Application : public Fl_Double_Window
         Fl_Output *duration;
         // Null Fl_Widget pointer aimed to be passed as first argument of some callback functions
         Fl_Widget *nullWidget = nullptr;
+        Fl_Multiline_Output *fileInfo;
 
         struct AppConfig {
             std::string outputDevice;
@@ -70,6 +72,7 @@ class Application : public Fl_Double_Window
         void updateToggleButton();
         std::map<std::string, int> getTimeFromSeconds(double seconds);
         bool hasSliderMoved = false;
+        void dispayFileInfo(std::map<std::string, std::string> info);
 
         // Call back functions.
         static void quit_cb(Fl_Widget *w, void *data);
