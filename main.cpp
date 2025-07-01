@@ -90,8 +90,6 @@ Application::Application(int w, int h, const char *l, int argc, char *argv[]) : 
 int main(int argc, char *argv[])
 {
     Application app(WIDTH, HEIGHT, "Player", argc, argv);
-    //Application *app = new Application(300,200,"My Application", argc, argv);
-    //app->show();
 
     return Fl::run();
 }

@@ -1,6 +1,10 @@
 #ifndef FILE_CHOOSER_H
 #define FILE_CHOOSER_H
 #include <stdlib.h>     // exit,malloc
+#include <string>
+#include <vector>
+#include <cctype>
+#include <iostream>
 #include <FL/Fl_Native_File_Chooser.H>
 
 class FileChooser : public Fl_Native_File_Chooser
@@ -24,10 +28,23 @@ class FileChooser : public Fl_Native_File_Chooser
 
     public:
 
-    FileChooser() {
+    FileChooser(std::vector<std::string> formats) {
+        unsigned int size = formats.size();
+        std::string supportedFormats = "";
+
+        // Iterate through the extension array.
+        for (unsigned int i = 0; i < size; i++) {
+            // Leave out formats in uppercase as there are displayed anyway.
+            if (!std::isupper(formats[i][1])) {
+                // Store the supported formats.
+                supportedFormats = supportedFormats + "*" + formats[i] + "\n";
+            }
+        }
+
         // Initialize the file chooser
-        filter("Wav\t*.wav\n"
-               "MP3\t*.mp3\n");
+        /*filter("Wav\t*.wav\n"
+               "MP3\t*.mp3\n");*/
+        filter(supportedFormats.c_str());
         preset_file(this->untitled_default());
     }
 

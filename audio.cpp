@@ -192,8 +192,25 @@ static void data_callback(ma_device* pDevice, void* pOutput, const void* pInput,
 void Audio::loadFile(const char *filename)
 {
     printf("Load audio file '%s'\n", filename);
+    // First ensure the file format is supported.
+    std::string fileFormat = std::filesystem::path(filename).extension();
+    unsigned int size = supportedFormats.size();
+    bool supported = false;
 
-    // Check first for a possible file previously loaded.
+    // Check wether the format of the given file is supported
+    for (unsigned int i = 0; i < size; i++) {
+        if (fileFormat.compare(supportedFormats[i]) == 0) {
+            supported = true;
+            break;
+        }
+    }
+
+    if (!supported) {
+        std::cerr << "Format: " << fileFormat << " not supported." << std::endl;
+        return;
+    }
+
+    // Check for a possible file previously loaded.
     if (decoderInit) {
         // Ensure no more callbacks are running.
         ma_device_stop(&outputDevice);  

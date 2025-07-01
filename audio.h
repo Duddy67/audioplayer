@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iostream>
+#include <filesystem>
 #include <atomic>
 #include <vector>
 #include <thread>
@@ -59,6 +60,7 @@ class Audio {
         ma_device_id outputDeviceID = {0};
         OriginalFileFormat originalFileFormat;
         std::vector<DeviceInfo> getDevices(ma_device_type deviceType);
+        std::vector<std::string> supportedFormats = {".wav", ".WAV",".mp3", ".MP3", ".flac", ".FLAC", ".ogg", ".OGG"};
         bool storeOriginalFileFormat(const char* filename);
         void uninit();
         bool initializeOutputDevice();
@@ -84,6 +86,7 @@ class Audio {
         double getSeconds() { return seconds; }
         double getTotalSeconds();
         std::map<std::string, std::string> getOriginalFileFormat();
+        std::vector<std::string> getSupportedFormats() { return supportedFormats; }
         float getVolume() { return volume.load(std::memory_order_relaxed); }
         bool isContextInit() { return contextInit; }
         bool isPlaying();
